@@ -15,7 +15,6 @@ url                      : https://smarinovic.github.io # the base hostname & pr
 # Site Author
 author:
   name             : "Stipe Marinovic"
-  avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
   bio              : "OSCP"
   location         : "Croatia"
   email            :
