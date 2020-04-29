@@ -1,31 +1,5 @@
-plugins: 
-- jekyll-include-cache 
-remote_theme: "mmistakes/minimal-mistakes@4.19.1"
-
-minimal_mistakes_skin    : "default" # "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
-
-# Site Settings
-locale                   : "en-US"
-title                    : "Some security related stuff"
-title_separator          : "-"
-name                     : "Stipe Marinovic"
-description              : "CTP/OSCE resources etc."
-url                      : https://smarinovic.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
-
-# Site Author
-author:
-  name             : "Stipe Marinovic"
-  bio              : "OSCP"
-  location         : "Croatia"
-  email            :
-  links:
-    - label: "Email"
-      icon: "fas fa-fw fa-envelope-square"
-      # url: mailto:stipe.marinovic@protonmail.com
-    - label: "Twitter"
-      icon: "fab fa-fw fa-twitter-square"
-      # url: "https://twitter.com/stipemarinovic"
-    - label: "Instagram"
-      icon: "fab fa-fw fa-instagram"
-      # url: "https://instagram.com/stipe.marinovic"
+theme: jekyll-theme-hacker
+title: CTP/OSCE preparation resources, HTB writeups
+description: OSCP
+show_downloads: "false"
 
