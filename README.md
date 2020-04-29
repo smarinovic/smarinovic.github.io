@@ -1,4 +1,4 @@
-# Stipe Marinovic's web page
+# web page
 
 Site is still under consturction..  
 
