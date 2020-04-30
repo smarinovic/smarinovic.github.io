@@ -48,7 +48,7 @@ social:
 baseurl: ''
 
 # Change to your timezone › http://www.timezoneconverter.com/cgi-bin/findzone/findzone
-timezone: Asia/Shanghai
+timezone: Europe/Zagreb
 
 google_analytics:
   # Fill with your Google Analytics ID
