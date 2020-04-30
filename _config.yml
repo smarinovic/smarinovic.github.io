@@ -22,7 +22,7 @@ url: 'https://smarinovic.github.io'
 
 author: Stipe Marinovic                  # change to your full name
 
-avatar: /assets/img/sample/avatar.jpg   # support internet resources
+avatar: /_posts/profil.jpg   # support internet resources
 
 github:
   username: smarinovic             # change to your github username
