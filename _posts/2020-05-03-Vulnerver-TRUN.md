@@ -1,5 +1,4 @@
-
-'''
+´´´
 #!/usr/bin/python
 import sys
 from boofuzz import *
@@ -39,5 +38,5 @@ def main():
 
 if __name__ == "__main__":
     main()
- '''
  
+ ´´´
