@@ -6,9 +6,15 @@ categories: [Blogging, Tutorial]
 tags: [pentest, ctp, bof]
 toc: true
 ---
+
+# Introduction #
+
 Vulnserver is great resource for practicing buffer overflow. Source code can be found on: https://github.com/stephenbradshaw/vulnserver. In this blog post we will cover basic buffer overflow.
 
 #### TLDR; No bad chars, buffer is approx 4000 chars and TRUN . to trigger it. ####
+
+## Fuzzing ##
+
 ```
 #!/usr/bin/python
 import sys
