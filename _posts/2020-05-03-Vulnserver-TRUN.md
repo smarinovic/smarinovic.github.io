@@ -1,3 +1,12 @@
+---
+title: Basic buffer overflow
+author: Stipe Marinovic
+date: 2020-04-30 00:34:00 +0800
+categories: [Blogging, Tutorial]
+tags: [pentest, ctp, bof]
+toc: true
+---
+
 ```
 #!/usr/bin/python
 import sys
