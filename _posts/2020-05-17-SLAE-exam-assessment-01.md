@@ -10,16 +10,17 @@ toc: true
 
 ... page still under construction ...  
 
-# Assignment 01 #
+## Assignment 01 ##
 
 * Create a Shell_Bind_TCP shellcode
   - Binds to a port
   - Execs Shell on incoming connection
 * Port number should be easily configurable
 
-# Syscalls #
+## Prototype ##
 
-To get idea how bind shell works and which syscalls are used, we can create bind shell code in C. After a bit of research, the simplest bind shell is following:
+To get idea how bind shell works and which syscalls are used, we can create bind shell code in C.  
+After a bit of research, the simplest bind shell is following:
 ```
 #define _GNU_SOURCE # added to avoid gcc's implicit declaration of function warning
 #include <unistd.h> 
@@ -65,9 +66,12 @@ int main() {
 ```
 
 Compiled and run, we can confirm that bind shell is working.
-!(bind shell)[../assets/img/slae_00001.png]
+![bind shell](../assets/img/slae_00001.png)
 
-Based on prototype code above, we can conclude that following syscalls needs to be done in order to create bind shell:
+
+## Syscalls ##
+
+Based on prototype code above, we can conclude that following syscalls needs to be called in order to create bind shell:
 
 * socket
 * bind
@@ -88,7 +92,6 @@ List of all syscalls and descriptions can be found in: unistd_32.h on following 
 #define __NR_execve 11
 ```
 
-# Converting C to Assembley #
 
 First we need to figure out which arguments are needed for each syscall.  
 Let's start with socket call. Based on man 2 pages (```man 2 socket```) we can see the descripton of function and arguments it takes.
