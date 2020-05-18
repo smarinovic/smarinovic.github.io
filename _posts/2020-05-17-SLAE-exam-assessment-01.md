@@ -17,7 +17,7 @@ toc: true
   - Execs Shell on incoming connection
 * Port number should be easily configurable
 
-# Figuring out syscalls #
+# Syscalls #
 
 To get idea how bind shell works and which syscalls are used, we can create bind shell code in C. After a bit of research, the simplest bind shell is following:
 ```
