@@ -66,7 +66,7 @@ int main() {
 ```
 
 Compiled and run, we can confirm that bind shell is working.
-![bind shell](../assets/img/slae_00001.png)
+![bind shell](https://smarinovic.github.io/assets/img/slae_00001.png)
 
 
 ## Syscalls ##
