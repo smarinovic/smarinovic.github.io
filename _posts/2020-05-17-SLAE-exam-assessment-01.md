@@ -6,8 +6,6 @@ categories: [Blogging, Tutorial]
 tags: [slae, shellcoding]
 toc: true
 ---
-
-
 ... page still under construction ...  
 
 ## Assignment 01 ##
@@ -65,13 +63,13 @@ int main() {
 } 
 ```
 
-When application is compiled and run, we can confirm with netstat and netcat that application is indeed listening at port 4000 and provides shell to who ever connects to listening port.
+Once application is compiled (with: gcc bind.c) and run (./a.out), we can confirm with netstat (netstat -antvp) and netcat (nc -v 127.0.0.1 4000) 
+that application is indeed listening at port 4000 and provides shell to whoever connects to listening port as shown on following screenshot.
 ![bind shell](https://smarinovic.github.io/assets/img/slae_00001.png)
-
 
 ## Syscalls ##
 
-Based on prototype code above, we can conclude that following syscalls needs to be called in order to create bind shell:
+Based on prototype code above, we can conclude that following syscalls are needed to implement bind shell:
 
 * socket
 * bind
@@ -80,7 +78,10 @@ Based on prototype code above, we can conclude that following syscalls needs to 
 * dup2
 * execve
 
-List of all syscalls and descriptions can be found in: unistd_32.h on following location: ```/usr/include/x86_64-linux-gnu/asm/unistd_32.h```
+List of all syscalls, their call numbers can be found in: unistd_32.h. On Kali 2019.4 linux file is located on following location: 
+```
+/usr/include/x86_64-linux-gnu/asm/unistd_32.h
+```
 
 ```
 Syscall                Dec   Hex
@@ -93,8 +94,8 @@ Syscall                Dec   Hex
 #define __NR_execve    11    0xB
 ```
 
-First we need to figure out which arguments are needed for each syscall.  
-Let's start with socket call. Based on man 2 pages (```man 2 socket```) we can see the descripton of function and arguments it takes.
+Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which argments are needed we need to look at man pages. 
+Based on man 2 pages for socket syscall (```man 2 socket```) we can see the three arguments that need to be passed to syscall.
 
 ```
 int socket(int domain, int type, int protocol);
@@ -102,21 +103,44 @@ int socket(int domain, int type, int protocol);
 // The file descriptor returned by a successful call will be the lowest-numbered file descriptor not currently open for the process.
 ```
 
-Arguments are passed via EAX, EBX, ECX, EDX, ESI, EDI registers.  
-To have a clean start, registers need to be zero-out. Easiest way to do it (and avoid having null bytes in code) is by XOR register with itself.
+Arguments are passed via registers in following order; EAX, EBX, ECX, EDX, ESI, EDI. EAX always contains syscall number (in case of socket it is decimal 359 or hex 0x167). 
+The domain, type and protocol would need to be passed in EBX, ECX and EDX registers.
+
+If we look at prototype code: 
+```
+socket(AF_INET, SOCK_STREAM, 6);
+``` 
+We can see that 
+* __ domain __ is set to AF_INET which is eaqual to "2"
+* __ type __ is set to SOCK_STREAM which is eaqual to "1" and
+* __ protocol __ is set to 6 (IPPROTO_TCP)
+
+Before we can move any value to register we need to se registers to zero. The easiest way to to it without null bytes is to preform XOR operation on register.
 
 ```
-xor eax, eax    ; Clear EAX 
-xor ebx, ebx    ; Clear EBX
-xor ecx, ecx    ; Clear ECX
-xor edx, edx    ; Clear EDX
+; Clearing registers
+XOR EAX, EAX    ; set EAX to zero
+XOR EBX, EBX    ; set EBX to zero
+XOR ECX, ECX    ; set ECX to zero
+XOR EDX, EDX    ; set EDX to zero
 ```
 
-After that we need to pass syscall (hex 0x167) for socket in EAX register.  
+When registers are set to zero we can start writing assembly code to call socket syscall:
+
+```
+MOV AX, 0x167  ; 0x167 is hex syscall to socket
+MOV BL, 2      ; set domain argument
+MOV CL, 1      ; set type argument
+MOV DL, 6      ; set protocol argument
+INT 0x80       ; preforming syscall
+
+```
+
+
 Bind shell will most commonly be used in exploit which is usually delivered as payload to some network application.  
 For that reason, we need to avoid null bytes, as null bytes terminates string and breaks exploit.
 
-By using nasm_shell we can see that ```mov eax, 0x167``` generates null bytes: B86701 _ 0000 _ so we cannot simply use ```mov eax, 0x167```, instead we can use ```mov ax, 0x167```:
+By using nasm_shell we can see that ```mov eax, 0x167``` generates null bytes: B86701 __ 0000 __ so we cannot simply use ```mov eax, 0x167```, instead we can use ```mov ax, 0x167```:
 ```
 /usr/bin/msf-nasm_shell
 nasm > mov eax, 0x167
@@ -129,14 +153,6 @@ nasm >
 
 ```mov ah, 0x167 ; 359 (0x167) is the syscall for socket ```
 
-Next, we need to pass arguments to ```socket(AF_INET, SOCK_STREAM, 6);``` function by placing arguments in registers:
-
-```
-mov bl, 2  ; domain = 2 (AF_INET/IPv4)
-mov cl, 1  ; type = 1 (SOCK_STREAM/TCP)
-mov dl, 6  ; protocol = 6 (IPPROTO_TCP)
-int 0x80   ; syscall
-```
 
 .... to be continued ...
 
