@@ -83,16 +83,14 @@ List of all syscalls, their call numbers can be found in: unistd_32.h. On Kali 2
 /usr/include/x86_64-linux-gnu/asm/unistd_32.h
 ```
 
-```
-Syscall                Dec   Hex
+Syscall | Dec | Hex
 ----------------------------------
-#define __NR_socket    359   0x167
-#define __NR_bind      361   0x169
-#define __NR_listen    363   0x16B
-#define __NR_accept4   364   0x16C
-#define __NR_dup2      63    0x3F
-#define __NR_execve    11    0xB
-```
+#define __NR_socket | 359 | 0x167
+#define __NR_bind   | 361 | 0x169
+#define __NR_listen | 363 | 0x16B
+#define __NR_accept4 | 364 | 0x16C
+#define __NR_dup2   | 63 | 0x3F
+#define __NR_execve | 11 | 0xB
 
 Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which argments are needed we need to look at man pages. 
 Based on man 2 pages for socket syscall (`man 2 socket`) we can see the three arguments that need to be passed to syscall.
@@ -140,7 +138,7 @@ INT 0x80       ; preforming syscall
 Bind shell will most commonly be used in exploit which is usually delivered as payload to some network application.  
 For that reason, we need to avoid null bytes, as null bytes terminates string and breaks exploit.
 
-By using nasm_shell we can see that ```mov eax, 0x167``` generates null bytes: B86701 __ 0000 __ so we cannot simply use ```mov eax, 0x167```, instead we can use ```mov ax, 0x167```:
+By using nasm_shell we can see that `mov eax, 0x167` generates null bytes: B867010000 so we cannot simply use `mov eax, 0x167`, instead we can use `mov ax, 0x167`:
 ```
 /usr/bin/msf-nasm_shell
 nasm > mov eax, 0x167
