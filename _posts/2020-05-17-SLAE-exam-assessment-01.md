@@ -19,8 +19,8 @@ toc: true
 
 ## Prototype ##
 
-To get idea how bind shell works and which syscalls are used, we can create bind shell code in C.  
-After a bit of research, the simplest bind shell is following:
+To get idea how bind shell works and which syscalls are used/needed, we can create prototye of bind shell code in C.  
+
 ```
 #define _GNU_SOURCE # added to avoid gcc's implicit declaration of function warning
 #include <unistd.h> 
@@ -65,7 +65,7 @@ int main() {
 } 
 ```
 
-Compiled and run, we can confirm that bind shell is working.
+When application is compiled and run, we can confirm with netstat and netcat that application is indeed listening at port 4000 and provides shell to who ever connects to listening port.
 ![bind shell](https://smarinovic.github.io/assets/img/slae_00001.png)
 
 
@@ -112,9 +112,22 @@ xor ecx, ecx    ; Clear ECX
 xor edx, edx    ; Clear EDX
 ```
 
-After that we need to pass syscall for socket in EAX register.
+After that we need to pass syscall (hex 0x167) for socket in EAX register.  
+Bind shell will most commonly be used in exploit which is usually delivered as payload to some network application.  
+For that reason, we need to avoid null bytes, as null bytes terminates string and breaks exploit.
 
-```mov al, 0x167 ; 359 (0x167) is the syscall for socket ```
+By using nasm_shell we can see that ```mov eax, 0x167``` generates null bytes: B86701 _ 0000 _ so we cannot simply use ```mov eax, 0x167```, instead we can use ```mov ax, 0x167```:
+```
+/usr/bin/msf-nasm_shell
+nasm > mov eax, 0x167
+00000000  B867010000        mov eax, 0x167
+nasm > mov ax, 0x167
+00000000  66B86701          mov ax, 0x167
+nasm > 
+```
+
+
+```mov ah, 0x167 ; 359 (0x167) is the syscall for socket ```
 
 Next, we need to pass arguments to ```socket(AF_INET, SOCK_STREAM, 6);``` function by placing arguments in registers:
 
