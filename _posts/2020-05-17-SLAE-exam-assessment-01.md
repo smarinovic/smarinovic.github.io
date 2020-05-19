@@ -83,15 +83,15 @@ Based on prototype code above, we can conclude that following syscalls needs to 
 List of all syscalls and descriptions can be found in: unistd_32.h on following location: ```/usr/include/x86_64-linux-gnu/asm/unistd_32.h```
 
 ```
-#define __NR_socket 359
-#define __NR_socketcall 102
-#define __NR_bind 361
-#define __NR_listen 363
-#define __NR_accept4 364
-#define __NR_dup2 63
-#define __NR_execve 11
+Syscall                Dec   Hex
+----------------------------------
+#define __NR_socket    359   0x167
+#define __NR_bind      361   0x169
+#define __NR_listen    363   0x16B
+#define __NR_accept4   364   0x16C
+#define __NR_dup2      63    0x3F
+#define __NR_execve    11    0xB
 ```
-
 
 First we need to figure out which arguments are needed for each syscall.  
 Let's start with socket call. Based on man 2 pages (```man 2 socket```) we can see the descripton of function and arguments it takes.
