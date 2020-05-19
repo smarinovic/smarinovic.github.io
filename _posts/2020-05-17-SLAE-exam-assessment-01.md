@@ -63,7 +63,7 @@ int main() {
 } 
 ```
 
-Once application is compiled (with: gcc bind.c) and run (./a.out), we can confirm with netstat (netstat -antvp) and netcat (nc -v 127.0.0.1 4000) 
+Once application is compiled (`with: gcc bind.c`) and run (`./a.out`), we can confirm with netstat (`netstat -antvp`) and netcat (`nc -v 127.0.0.1 4000`) 
 that application is indeed listening at port 4000 and provides shell to whoever connects to listening port as shown on following screenshot.
 ![bind shell](https://smarinovic.github.io/assets/img/slae_00001.png)
 
@@ -95,7 +95,7 @@ Syscall                Dec   Hex
 ```
 
 Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which argments are needed we need to look at man pages. 
-Based on man 2 pages for socket syscall (```man 2 socket```) we can see the three arguments that need to be passed to syscall.
+Based on man 2 pages for socket syscall (`man 2 socket`) we can see the three arguments that need to be passed to syscall.
 
 ```
 int socket(int domain, int type, int protocol);
@@ -111,9 +111,9 @@ If we look at prototype code:
 socket(AF_INET, SOCK_STREAM, 6);
 ``` 
 We can see that 
-* __ domain __ is set to AF_INET which is eaqual to "2"
-* __ type __ is set to SOCK_STREAM which is eaqual to "1" and
-* __ protocol __ is set to 6 (IPPROTO_TCP)
+* domain is set to AF_INET which is eaqual to "2"
+* type is set to SOCK_STREAM which is eaqual to "1" and
+* protocol is set to 6 (IPPROTO_TCP)
 
 Before we can move any value to register we need to se registers to zero. The easiest way to to it without null bytes is to preform XOR operation on register.
 
