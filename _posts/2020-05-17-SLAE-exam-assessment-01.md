@@ -82,15 +82,16 @@ List of all syscalls, their call numbers can be found in: unistd_32.h. On Kali 2
 ```
 /usr/include/x86_64-linux-gnu/asm/unistd_32.h
 ```
-
-Syscall | Dec | Hex
+```
+Syscall               Dec   Hex
 ----------------------------------
-#define __NR_socket | 359 | 0x167
-#define __NR_bind   | 361 | 0x169
-#define __NR_listen | 363 | 0x16B
-#define __NR_accept4 | 364 | 0x16C
-#define __NR_dup2   | 63 | 0x3F
-#define __NR_execve | 11 | 0xB
+#define __NR_socket   359   0x167
+#define __NR_bind     361   0x169
+#define __NR_listen   363   0x16B
+#define __NR_accept4  364   0x16C
+#define __NR_dup2     63    0x3F
+#define __NR_execve   11    0xB
+```
 
 Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which argments are needed we need to look at man pages. 
 Based on man 2 pages for socket syscall (`man 2 socket`) we can see the three arguments that need to be passed to syscall.
