@@ -134,9 +134,9 @@ Since values 1, 2 and 6 would generate null bytes as shown on following block co
 nasm > mov EBX, 0x2
 00000000  BB02000000        mov ebx,0x2 
 Null bytes ---^^^^^^
-                                                                                                                             
+                                                                                      
 nasm > mov ECX, 0x1
-00000000  B901000000        mov ecx,0x1                                                                                                                              
+00000000  B901000000        mov ecx,0x1                                                                       
 Null bytes ---^^^^^^
 
 nasm > mov EDX, 0x6
@@ -155,7 +155,7 @@ nasm > mov dl, 0x6
 00000000  B206              mov dl,0x6
 ```
 
-Before we can move any value to register we need to se registers to zero. The easiest way to to it without null bytes is to preform XOR operation on register.
+Before we can move any value to register we need to se registers to zero. The easiest way to do it without null bytes is to preform XOR operation on register.
 
 ```
 ; Clearing registers
