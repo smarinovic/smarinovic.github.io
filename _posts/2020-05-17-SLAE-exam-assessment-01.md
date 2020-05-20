@@ -124,12 +124,27 @@ Once syscall number is placed in EAX register, we can continue with function arg
 ```
 socket(AF_INET, SOCK_STREAM, 6);
 ``` 
-We can see that 
-* domain is set to AF_INET which is eaqual to "2"
-* type is set to SOCK_STREAM which is eaqual to "1" and
-* protocol is set to 6 (IPPROTO_TCP)
 
-Since values 1, 2 and 6 would generate null bytes as shown on following block code: 
+Domain (AF_INET) is defined in: `/usr/include/x86_64-linux-gnu/bits/socket.h` as value "2" (PF_INET is the same as AF_INET):
+
+```
+/* Protocol families.  */
+#define PF_UNSPEC       0       /* Unspecified.  */
+#define PF_LOCAL        1       /* Local to host (pipes and file-domain).  */
+#define PF_UNIX         PF_LOCAL /* POSIX name for PF_LOCAL.  */
+#define PF_FILE         PF_LOCAL /* Another non-standard name for PF_LOCAL.  */
+#define PF_INET         2       /* IP protocol family.  */
+```
+Type (SOCK_STREAM) is defined in `/usr/include/x86_64-linux-gnu/bits/socket_type.h` as value "1"
+```
+/* Types of sockets.  */
+enum __socket_type
+{
+  SOCK_STREAM = 1,              /* Sequenced, reliable, connection-based
+                                   of fixed maximum length.  */
+```
+
+Since moving values 1, 2 and 6 to EBX, ECX and EDX would generate null bytes as shown on following block code: 
 ```
 nasm > mov EBX, 0x2
 00000000  BB02000000        mov ebx,0x2 
