@@ -78,7 +78,7 @@ Based on prototype code above, we can conclude that following syscalls are neede
 * dup2
 * execve
 
-List of all syscalls, their call numbers can be found in: unistd_32.h. On Kali 2019.4 linux file is located on following location: 
+List of all syscalls and their associated numbers can be found in: unistd_32.h. On Kali 2019.4 linux file is located on following location: 
 ```
 /usr/include/x86_64-linux-gnu/asm/unistd_32.h
 ```
@@ -98,9 +98,9 @@ Based on man 2 pages for socket syscall (`man 2 socket`) we can see the three ar
 
 ```
 int socket(int domain, int type, int protocol);
-// socket()  creates an endpoint for communication and returns a file descriptor that refers to that endpoint.  
-// The file descriptor returned by a successful call will be the lowest-numbered file descriptor not currently open for the process.
 ```
+socket()  creates an endpoint for communication and returns a file descriptor that refers to that endpoint.  
+The file descriptor returned by a successful call will be the lowest-numbered file descriptor not currently open for the process.
 
 Arguments are passed via registers in following order; EAX, EBX, ECX, EDX, ESI, EDI. EAX always contains syscall number (in case of socket it is decimal 359 or hex 0x167). 
 The domain, type and protocol would need to be passed in EBX, ECX and EDX registers.
