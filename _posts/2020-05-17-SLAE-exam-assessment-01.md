@@ -100,12 +100,27 @@ Based on man 2 pages for socket syscall (`man 2 socket`) we can see the three ar
 int socket(int domain, int type, int protocol);
 ```
 socket()  creates an endpoint for communication and returns a file descriptor that refers to that endpoint.  
-The file descriptor returned by a successful call will be the lowest-numbered file descriptor not currently open for the process.
-
+The domain argument specifies a communication domain; this selects the protocol family which will be used for communication.  These families are defined in <sys/socket.h>.  
+The socket has the indicated type, which specifies the communication semantics.  
+The protocol specifies a particular protocol to be used with the socket.  Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case protocol can be specified as 0.
+  
 Arguments are passed via registers in following order; EAX, EBX, ECX, EDX, ESI, EDI. EAX always contains syscall number (in case of socket it is decimal 359 or hex 0x167). 
-The domain, type and protocol would need to be passed in EBX, ECX and EDX registers.
+The domain, type and protocol needs to be passed in EBX, ECX and EDX registers.
+  
+Assemlby instraction: `MOV EAX, value` is used to move value to EAX register. Since shell code will most probably be used within exploit, payload cannot contain null byte as null byte (\x00) terminates string and break exploit. Playing with msf-nasm_shell.rb script which is available in Kali linux we can see that opcode for MOV EAX, 0x167 contains null bytes.
+```
+nasm > mov eax, 0x167
+00000000  B867010000        mov eax, 0x167
+Null Bytes -----^^^^
+```
+To mitigate this issue, we need to find another way of placing 0x167 in EAX register. One way is to do this is to clear EAX register (set it to zero) and once EAX register is set to zero use MOV AX, 0x167 which refers to first 16 bit of EAX register. Opcode for such instruction not contain null bytes as shown on following example:
+```
+nasm > mov ax, 0x167
+00000000  66B86701          mov ax, 0x167
+nasm > 
+```
 
-If we look at prototype code: 
+Once syscall number is placed in EAX register, we can continue with function arguments. If we look at prototype code: 
 ```
 socket(AF_INET, SOCK_STREAM, 6);
 ``` 
@@ -139,15 +154,6 @@ INT 0x80       ; preforming syscall
 Bind shell will most commonly be used in exploit which is usually delivered as payload to some network application.  
 For that reason, we need to avoid null bytes, as null bytes terminates string and breaks exploit.
 
-By using nasm_shell we can see that `mov eax, 0x167` generates null bytes: B867010000 so we cannot simply use `mov eax, 0x167`, instead we can use `mov ax, 0x167`:
-```
-/usr/bin/msf-nasm_shell
-nasm > mov eax, 0x167
-00000000  B867010000        mov eax, 0x167
-nasm > mov ax, 0x167
-00000000  66B86701          mov ax, 0x167
-nasm > 
-```
 
 
 ```mov ah, 0x167 ; 359 (0x167) is the syscall for socket ```
