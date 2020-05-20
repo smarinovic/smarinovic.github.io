@@ -113,7 +113,7 @@ nasm > mov eax, 0x167
 00000000  B867010000        mov eax, 0x167
 Null Bytes -----^^^^
 ```
-To mitigate this issue, we need to find another way of placing 0x167 in EAX register. One way is to do this is to clear EAX register (set it to zero) and once EAX register is set to zero use MOV AX, 0x167 which refers to first 16 bit of EAX register. Opcode for such instruction not contain null bytes as shown on following example:
+To mitigate this issue, we need to find another way of placing 0x167 in EAX register. One way is to do this is to clear EAX register (set it to zero) and once EAX register is set to zero use MOV AX, 0x167 which refers to first 16 bit of EAX register. Opcode for such instruction does not contain null bytes as shown on following example:
 ```
 nasm > mov ax, 0x167
 00000000  66B86701          mov ax, 0x167
@@ -128,6 +128,32 @@ We can see that
 * domain is set to AF_INET which is eaqual to "2"
 * type is set to SOCK_STREAM which is eaqual to "1" and
 * protocol is set to 6 (IPPROTO_TCP)
+
+Since values 1, 2 and 6 would generate null bytes as shown on following block code: 
+```
+nasm > mov EBX, 0x2
+00000000  BB02000000        mov ebx,0x2 
+Null bytes ---^^^^^^
+                                                                                                                             
+nasm > mov ECX, 0x1
+00000000  B901000000        mov ecx,0x1                                                                                                                              
+Null bytes ---^^^^^^
+
+nasm > mov EDX, 0x6
+00000000  BA06000000        mov edx,0x6 
+Null bytes ---^^^^^^
+```
+
+similar to moving value to EAX register, we can move values to BL, CL and DL wich represents first 8 bites of EBX, ECX and EDX registers. We couldn't use MOV AL, 0x167 as 0x167 requires more than 8 bits so AX had to be used.
+
+```
+nasm > mov bl, 0x2
+00000000  B302              mov bl,0x2
+nasm > mov cl, 0x1
+00000000  B101              mov cl,0x1
+nasm > mov dl, 0x6
+00000000  B206              mov dl,0x6
+```
 
 Before we can move any value to register we need to se registers to zero. The easiest way to to it without null bytes is to preform XOR operation on register.
 
@@ -149,15 +175,6 @@ MOV DL, 6      ; set protocol argument
 INT 0x80       ; preforming syscall
 
 ```
-
-
-Bind shell will most commonly be used in exploit which is usually delivered as payload to some network application.  
-For that reason, we need to avoid null bytes, as null bytes terminates string and breaks exploit.
-
-
-
-```mov ah, 0x167 ; 359 (0x167) is the syscall for socket ```
-
 
 .... to be continued ...
 
