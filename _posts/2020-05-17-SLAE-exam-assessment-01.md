@@ -232,7 +232,7 @@ INT 0x80         ; interrupt
 ```
 
 In the same way listen syscall can be written in assembly.
-
+```
 int listen(int sockfd, int backlog);
 ```
 listen() marks the socket referred to by sockfd as a passive socket, that is, as a socket that will be used to accept incoming connection requests using accept(2).
@@ -250,9 +250,10 @@ INT 0x80         ; interrupt
 ```
 
 Now when we have socket, bind and listen, next we need to accept connection. From `man 2 accept` we can see which arguments need to be passed to syscall.
-
+```
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 ```
+
 The accept() system call is used with connection-based socket types (SOCK_STREAM, SOCK_SEQPACKET). 
 It extracts the first connection request on the queue of pending connections for the listening socket, sockfd, creates a new connected socket, and returns a new file descriptor referring to that socket.  
 The newly created socket is not in the listening state.  
