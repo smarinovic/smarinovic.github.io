@@ -3,6 +3,7 @@ global _start
 section .text
 _start: 
 
+        ; clear registers
 	XOR EAX, EAX     ; set EAX to zero
 	XOR EBX, EBX     ; set EBX to zero
 	XOR ECX, ECX     ; set ECX to zero
