@@ -438,7 +438,7 @@ ld -z execstack -o bind bind.o  -m elf_i386
 
 And when we run it, we can confirm that application is indeed listening on port 4444 and provides shell to whoever connects to listening port.
 
-![bind shell](https://smarinovic.github.io/assets/img/slae_00001.png)
+![bind shell](https://smarinovic.github.io/assets/img/slae_00002.png)
 
 
 
