@@ -353,3 +353,8 @@ So when we put it all together and add sections and entry point the result is fo
 
 ```
 
+```
+nasm -f elf32 bind.nasm -o bind.o
+ld -z execstack -o bind bind.o  -m elf_i386
+
+
