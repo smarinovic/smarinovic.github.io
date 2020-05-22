@@ -41,7 +41,7 @@ int main() {
 
   // Setup struct "server" containing following information: address, port and address family
   server.sin_addr.s_addr = htonl(INADDR_ANY); // any address (0.0.0.0)
-  server.sin_port = htons(4000);              // port 4000
+  server.sin_port = htons(4444);              // port 4444
   server.sin_family = AF_INET;                // address family (ip v4)
 
   // Bind socket to ip 0.0.0.0, port 4000 
@@ -207,7 +207,7 @@ Since stack grows from higher addresses to lower addresses, last argument needs 
 
 ```
 server.sin_addr.s_addr = htonl(INADDR_ANY); // any address (0.0.0.0)
-server.sin_port = htons(4000);              // port 4000
+server.sin_port = htons(4444);              // port 4444
 server.sin_family = AF_INET;                // address family (ip v4)
 ```
 There is also 4th parameter: sin_zero wish is always zero. So in order to push these values onto the stack we have to use push in following order:
@@ -216,7 +216,7 @@ There is also 4th parameter: sin_zero wish is always zero. So in order to push t
 XOR  ECX, ECX    ; clear ECX so that we can push zero to the stack
 PUSH ECX         ; push zero_sin = 0 to the stack
 PUSH ECX         ; push INADDR_ANY = 0.0.0.0 to the stack
-PUSH word 0x0AF  ; push hex 0xFA0 (dec 4000) in reverse oreder due to little endian
+PUSH word 0x5c11 ; push hex 0x5c11 (dec 4444) in reverse oreder due to little endian
 PUSH word 0x02   ; push hex 0x02 (dec 2) on the stack. 2 represents AF_INET
 ```
 
@@ -243,7 +243,7 @@ From prototype code we can see backlog is set to 2: `listen(socketd, 2)` and soc
 
 ```
 XOR EAX, EAX     ; set EAX to zero
-MOV EAX, 0x16B   ; move 0x16B to EAX
+MOV AX, 0x16B    ; move 0x16B to (E)AX
 MOV EBX, EDI     ; move socket descriptor into EBX as first argument
 MOV CL,  0x2     ; move "2" as backlog into ECX as second argument
 INT 0x80         ; interrupt
@@ -260,7 +260,7 @@ The newly created socket is not in the listening state.
 
 ```
 XOR EAX, EAX     ; set EAX to zero for clean start
-MOV EAX, 0x16C   ; move accept syscall number (0x16C) in EAX
+MOV AX, 0x16C    ; move accept syscall number (0x16C) in (E)AX
 MOV EBX, EDI     ; move socket descriptor from EDI to EBX as first argument
 XOR ECX, ECX     ; set ECX to zero as argument is NULL
 XOR EDX, EDX     ; set EDX to zero as argument is NULL
@@ -386,14 +386,14 @@ _start:
 
         ; listen syscall
         XOR EAX, EAX     ; set EAX to zero
-        MOV EAX, 0x16B   ; move 0x16B to EAX
+        MOV AX, 0x16B    ; move 0x16B to EAX
         MOV EBX, EDI     ; move socket descriptor into EBX as first argument
         MOV CL,  0x2     ; move "2" as backlog into ECX as second argument
         INT 0x80         ; interrupt
 
         ; accept syscall
         XOR EAX, EAX     ; set EAX to zero for clean start
-        MOV EAX, 0x16C   ; move accept syscall number (0x16C) in EAX
+        MOV EX, 0x16C    ; move accept syscall number (0x16C) in EAX
         MOV EBX, EDI     ; move socket descriptor from EDI to EBX as first argument
         XOR ECX, ECX     ; set ECX to zero as argument is NULL
         XOR EDX, EDX     ; set EDX to zero as argument is NULL
