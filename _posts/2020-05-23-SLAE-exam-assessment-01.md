@@ -450,7 +450,6 @@ And when we put it is skeleton C program, we can also confirm it works with nets
 
 ```
 gcc -fno-stack-protector -z execstack -m32 skeleton.c -o bind_shell
-
 ```
 ![opcode test](https://smarinovic.github.io/assets/img/slae_00004.png)
 
