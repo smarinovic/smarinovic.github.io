@@ -77,10 +77,10 @@ Based on man 2 pages for socket syscall (`man 2 socket`) we can see the three ar
 ```
 int socket(int domain, int type, int protocol);
 ```
-|socket()  creates an endpoint for communication and returns a file descriptor that refers to that endpoint.  
-|The domain argument specifies a communication domain; this selects the protocol family which will be used for communication.  These families are defined in <sys/socket.h>.  
-|The socket has the indicated type, which specifies the communication semantics.  
-|The protocol specifies a particular protocol to be used with the socket.  Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case protocol can be specified as 0.
+> socket()  creates an endpoint for communication and returns a file descriptor that refers to that endpoint.  
+> The domain argument specifies a communication domain; this selects the protocol family which will be used for communication.  These families are defined in <sys/socket.h>.  
+> The socket has the indicated type, which specifies the communication semantics.  
+> The protocol specifies a particular protocol to be used with the socket.  Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case protocol can be specified as 0.
   
 Arguments are passed via registers in following order; EAX, EBX, ECX, EDX, ESI, EDI. EAX always contains syscall number (in case of socket it is decimal 359 or hex 0x167). 
 The domain, type and protocol needs to be passed in EBX, ECX and EDX registers.
@@ -175,13 +175,13 @@ Next step is to prepare registers for accept syscall. According to `man 2 connec
 ```
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 ```
-| The  connect() system call connects the socket referred to by the file descriptor sockfd to the address specified by addr. The addrlen argument specifies the size of addr.  The format of the address in addr is determined by the address space of the socket sockfd; see socket(2) for further details.
-| If the socket sockfd is of type SOCK_DGRAM, then addr is the address to which datagrams are sent by default, and the only address from which datagrams are received.   If  the  socket  is  of type SOCK_STREAM or SOCK_SEQPACKET, this call attempts to make a connection to the socket that is bound to the address specified by addr.
-| Generally, connection-based protocol sockets may successfully connect() only once; connectionless protocol sockets may use  connect()  multiple  times  to change  their  association.   Connectionless sockets may dissolve the association by connecting to an address with the sa_family member of sockaddr set to AF_UNSPEC (supported on Linux since kernel 2.2).
+> The  connect() system call connects the socket referred to by the file descriptor sockfd to the address specified by addr. The addrlen argument specifies the size of addr.  The format of the address in addr is determined by the address space of the socket sockfd; see socket(2) for further details.
+> If the socket sockfd is of type SOCK_DGRAM, then addr is the address to which datagrams are sent by default, and the only address from which datagrams are received.   If  the  socket  is  of type SOCK_STREAM or SOCK_SEQPACKET, this call attempts to make a connection to the socket that is bound to the address specified by addr.
+> Generally, connection-based protocol sockets may successfully connect() only once; connectionless protocol sockets may use  connect()  multiple  times  to change  their  association.   Connectionless sockets may dissolve the association by connecting to an address with the sa_family member of sockaddr set to AF_UNSPEC (supported on Linux since kernel 2.2).
 
 
 
-KKaddrlen specifies the size, in bytes, of the address structure pointed to by addr.
+addrlen specifies the size, in bytes, of the address structure pointed to by addr.
 
 In a same way as for socket syscall we need to prepare data for bind bind syscall with exception that bind is using struct sockaddr which needs to be saved on the stack. 
 In order to place some value on the stack PUSH instraction needs to be used. 
