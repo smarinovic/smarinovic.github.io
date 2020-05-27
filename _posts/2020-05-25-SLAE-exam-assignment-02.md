@@ -6,6 +6,9 @@ categories: [Blogging, Tutorial]
 tags: [slae, shellcoding]
 toc: true
 ---
+
+** PAGE STILL UNDER CONSTRUCTION **
+
 ## Assignment 02 ##
 
 * Create a Shell_Reverse_TCP shellcode
