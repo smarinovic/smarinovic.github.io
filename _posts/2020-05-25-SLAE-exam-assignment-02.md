@@ -7,8 +7,6 @@ tags: [slae, shellcoding]
 toc: true
 ---
 
-** PAGE STILL UNDER CONSTRUCTION **
-
 ## Assignment 02 ##
 
 * Create a Shell_Reverse_TCP shellcode
@@ -296,7 +294,7 @@ ECX should point to the location of EBX so we can push EBX to the stack and move
 ```
 PUSH EBX
 MOV ECX, ESP
-MOV AL, 0x0Bž
+MOV AL, 0x0B
 INT 0x80
 ```
 
