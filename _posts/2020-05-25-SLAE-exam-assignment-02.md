@@ -381,7 +381,7 @@ Opcode can be copied in skeleton C program. Once compiled and run we can confirm
 ```
 gcc -fno-stack-protector -z execstack -m32 skeleton.c -o rev_shell
 ```
-![opcode test](https://smarinovic.github.io/assets/img/slae_00011.png)
+![opcode test](https://smarinovic.github.io/assets/img/slae_00013.png)
 
 
 ## Wrapper ##
