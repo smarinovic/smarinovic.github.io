@@ -32,12 +32,29 @@ While(True):
 
 ## First try ##
 
-Let's write an Egg Hunter in assembly code based on prototype.
+Let's write an Egg Hunter in assembly code based on prototype and see what will happen.
 
 ```
+global _start
+
+_start:
+
+XOR EAX, EAX                    ; clear EAX
+
+NEXT_ADDRESS:                   ; label used for looping
+  INC EAX                       ; increase EAX by 1
+
+  CMP dword [eax], 0x74303077   ; Compare 4 bytes with w00t
+  JNZ SHORT NEXT_ADDRESS        ; if w00t not found, jump to NEXT_ADDRESS
+
+  CMP dword [edx+4], 0x74303077 ; if w00t found, compare next 4 bytes with w00t 
+  JNZ SHORT NEXT_ADDRESS        ; if second w00t not found, jump to NEXT_ADDRESS
+
+  ADD EAX, 0x8                  ; if two eggs are found, increase EAX + 8         
+  JMP EAX                       ; jump to EAX + 8 address where shell code would be located
 
 ``` 
-But when we try to run it and observe behaviour with GDB we get segmentation fault.
+But when we try to run it and observe behaviour with GDB we get an segmentation fault.
 
 ```
 Program received signal SIGSEGV, Segmentation fault.                                                                                                                  
@@ -59,6 +76,7 @@ To mitigate this issue, there are two possible solutions, both are relying on fo
 - SYS_SIGACTION
 - SYS_ACCESS
 
+....
 
 ## References ##
 
