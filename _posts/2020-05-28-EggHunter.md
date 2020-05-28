@@ -11,11 +11,11 @@ toc: true
 
 ## Introduction ##
 
-Egg Hunter is piece of code used to search for an "egg" in memory.
-Egg is just a two series of 4 bytes string, usually: "w00t" (w00tw00t) which is added as prefix to a shellcode and thus marks beggining of shell code.
-Egg Hunter is useful in situation when buffer overflow vulnerability provides limited space, not large enough for placing shell code, but still shell code ends up somewhere in a memory. 
-So instead of executing shellcode, egghunter searches for a egg in a memory and once it founds egg it passes execution to a shellcode located after the egg.
-Egg is appended twice as prefix to shell code in order to prevent Egg Hunter to find itself, meaning that egg is "w00t" but Egg Hunter is looking for two occurences of egg (w00t) in a row (w00tw00t).
+Egg Hunter is piece of code used to search for an "egg" in memory.  
+Egg is just a two series of 4 bytes string, usually: "w00t" (w00tw00t) which is added as prefix to a shellcode and thus marks beggining of shell code.  
+Egg Hunter is useful in situation when buffer overflow vulnerability provides limited space, not large enough for placing shell code, but still shell code ends up somewhere in a memory.  
+So instead of executing shellcode, egghunter searches for a egg in a memory and once it founds egg it passes execution to a shellcode located after the egg.  
+Egg is appended twice as prefix to shell code in order to prevent Egg Hunter to find itself, meaning that egg is "w00t" but Egg Hunter is looking for two occurences of egg (w00t) in a row (w00tw00t). 
 
 ## Prototype ##
 
@@ -44,10 +44,10 @@ XOR EAX, EAX                    ; clear EAX
 NEXT_ADDRESS:                   ; label used for looping
   INC EAX                       ; increase EAX by 1
 
-  CMP dword [eax], 0x74303077   ; Compare 4 bytes with w00t
+  CMP DWORD [EAX], 0x74303077   ; Compare 4 bytes with w00t
   JNZ SHORT NEXT_ADDRESS        ; if w00t not found, jump to NEXT_ADDRESS
 
-  CMP dword [edx+4], 0x74303077 ; if w00t found, compare next 4 bytes with w00t 
+  CMP dword [EAX+4], 0x74303077 ; if w00t found, compare next 4 bytes with w00t 
   JNZ SHORT NEXT_ADDRESS        ; if second w00t not found, jump to NEXT_ADDRESS
 
   ADD EAX, 0x8                  ; if two eggs are found, increase EAX + 8         
