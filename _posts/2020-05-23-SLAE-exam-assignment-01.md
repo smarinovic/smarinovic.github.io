@@ -1,17 +1,18 @@
 ---
-title: SLAE exam assignment 01
+title: Linux bind shell in assembly
 author: Stipe Marinovic
 date: 2020-05-23 07:00:00 +0800
 categories: [Blogging, Tutorial]
 tags: [slae, shellcoding]
 toc: true
 ---
-## Assignment 01 ##
 
-* Create a Shell_Bind_TCP shellcode
-  - Binds to a port
-  - Execs Shell on incoming connection
-* Port number should be easily configurable
+## Introduction ##
+
+Objective of this blog post is to explain process of creating bind shell in assembly language for 32 bit Linux. 
+Blog post was created for the SLAE certification exam and it describes process of creating both: bind shell and wrapper script which allows easy modification of bind shell's listening port. 
+Bind shell can simply be described as a piece of code which can be used to gain command execution (shell access) on target host. 
+It is mostly used within payload sent to remote application which is vulnerable to buffer overflow. 
 
 ## Prototype ##
 

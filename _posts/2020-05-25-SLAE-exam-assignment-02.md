@@ -1,18 +1,18 @@
 ---
-title: SLAE exam assignment 02
+title: Linux reverse shell in assembly
 author: Stipe Marinovic
-date: 2020-05-25 23:00:00 +0800
+date: 2020-05-27 23:00:00 +0800
 categories: [Blogging, Tutorial]
 tags: [slae, shellcoding]
 toc: true
 ---
 
-## Assignment 02 ##
+## Introduction ##
 
-* Create a Shell_Reverse_TCP shellcode
- – Reverse connects to configured IP and Port  
- – Execs shell on successful connecion
-* IP and Port should be easily configurable
+Objective of this blog post is to explain process of creating reverse shell in assembly language for 32 bit Linux. 
+Blog post was created for the SLAE certification exam and it describes process of creating both: reverse shell and wrapper script which allows easy modification of IP address and port. 
+Reverse shell can simply be described as a piece of code which can be used to gain command execution (shell access) on target host by establishing connection with remote machine. 
+It is mostly used within payload sent to remote application which is vulnerable to buffer overflow.
 
 ## Prototype ##
 
