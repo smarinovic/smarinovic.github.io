@@ -503,6 +503,6 @@ we need to copy into skeleton.c, compile and run it, and as result bind_shell is
 ![wrapper test](https://smarinovic.github.io/assets/img/slae_00007.png)
 
 ## References ##
-![h0mbre](https://h0mbre.github.io/)
-![Coffeegist](https://coffeegist.com/)
-![Abatchy blog](https://www.abatchy.com/)
+[h0mbre](https://h0mbre.github.io/)
+[Coffeegist](https://coffeegist.com/)
+[Abatchy blog](https://www.abatchy.com/)
