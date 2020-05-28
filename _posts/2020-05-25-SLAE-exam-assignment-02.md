@@ -442,3 +442,9 @@ execve("//bin/sh", ["//bin/sh"], 0xbfcf6cf0 /* 0 vars */) = 0
 ```
 ![wrapper test](https://smarinovic.github.io/assets/img/slae_00013.png)
 
+## References ##
+![h0mbre](https://h0mbre.github.io/)
+![Coffeegist](https://coffeegist.com/)
+![Abatchy blog](https://www.abatchy.com/)
+
+

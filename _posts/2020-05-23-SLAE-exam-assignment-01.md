@@ -501,3 +501,8 @@ Resulting opcode:
 we need to copy into skeleton.c, compile and run it, and as result bind_shell is listening on port 3333 as shown on following screen shot.
 
 ![wrapper test](https://smarinovic.github.io/assets/img/slae_00007.png)
+
+## References ##
+![h0mbre](https://h0mbre.github.io/)
+![Coffeegist](https://coffeegist.com/)
+![Abatchy blog](https://www.abatchy.com/)
