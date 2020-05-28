@@ -60,3 +60,10 @@ To mitigate this issue, there are two possible solutions, both are relying on fo
 - SYS_ACCESS
 
 
+## References ##
+
+* [Corlean - exploit writing tutorial](https://www.corelan.be/index.php/2010/01/09/exploit-writing-tutorial-part-8-win32-egg-hunting/)
+* [Art from code blog](https://artfromcode.wordpress.com/2018/03/23/slae-assignment-3-the-egg-hunter/)
+* [IllegalBytes blog](https://illegalbytes.com/2018-03-20/slae-assignment-3-linux-x86-egghunting/)
+* [Coffeegist blog](https://coffeegist.com/security/slae-exam-3-egg-hunter-shellcode/)
+* [Ryuke Ackerman's blog](https://medium.com/@ryukeackerman/securitytube-linux-assembly-expert-slae-assignment-writeups-x03-egg-hunter-shellcode-ea53bf7a12eb)
