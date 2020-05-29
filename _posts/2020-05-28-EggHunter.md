@@ -13,8 +13,9 @@ toc: true
 
 Egg Hunter is piece of code used to search for an "egg" in memory.  
 Egg as such is just a 4 bytes string, usually: "w00t" (or something unique) which is added twice as prefix to a shellcode and thus marks beggining of shell code.  
-Egg Hunter is useful in situation when buffer overflow vulnerability provides limited space, not large enough for placing shell code, but still shell code ends up somehow, somewhere in a memory. For example, HTTP header can be vulnerable to buffer overflow  but useful buffer is not large enought to hold shell code so instead shell code can can be delivered as payload within POST request etc.   
-So instead of direct execution of shellcode at first Egg Hunter is executed which searches for a egg in a memory and once it founds egg (two instances of egg: w00tw00t) it passes execution to a shellcode located just after the egg.  
+Egg Hunter is useful in situation when buffer overflow vulnerability provides limited space, not large enough for placing shell code, but still shell code ends up somehow, somewhere in a memory.  
+For example, HTTP header can be vulnerable to buffer overflow  but useful buffer is not large enought to hold shell code so instead shell code can can be delivered as payload within POST request etc.   
+Instead of direct execution of shellcode at first Egg Hunter is executed which searches for a egg in a memory and once it founds egg (two instances of egg: w00tw00t) it passes execution to a shellcode located just after the egg.  
 Egg is appended twice as prefix to shell code in order to prevent Egg Hunter to find itself, meaning that egg is "w00t" but Egg Hunter is looking for two occurences of egg (w00t) one after another (w00tw00t). 
 
 ## Prototype ##
