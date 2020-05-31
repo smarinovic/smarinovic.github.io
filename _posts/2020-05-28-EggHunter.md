@@ -108,11 +108,8 @@ EFAULT is defined in `/usr/include/libr/sflib/common/sftypes.h` file and F_OK is
 
 ## Egg Hunter - second attempt ##
 
-<<<<<<< HEAD
 .... stil under construction ....
-=======
 
->>>>>>> 87088967abfd2571c5091e8b377da4dabbfad8f6
 
 ## References ##
 
