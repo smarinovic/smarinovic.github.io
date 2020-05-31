@@ -39,42 +39,50 @@ global _start
 
 _start:
 
-XOR EAX, EAX                    ; clear EAX
+XOR EDX, EDX                    ; clear EDX
 
 NEXT_ADDRESS:                   ; label used for looping
-  INC EAX                       ; increase EAX by 1
+  INC EDX                       ; increase EDX by 1
 
-  CMP DWORD [EAX], 0x74303077   ; Compare 4 bytes with w00t
+  CMP DWORD [EDX], 0x74303077   ; Compare 4 bytes with w00t
   JNZ SHORT NEXT_ADDRESS        ; if w00t not found, jump to NEXT_ADDRESS
 
-  CMP dword [EAX+4], 0x74303077 ; if w00t found, compare next 4 bytes with w00t 
+  CMP dword [EDX+4], 0x74303077 ; if w00t found, compare next 4 bytes with w00t 
   JNZ SHORT NEXT_ADDRESS        ; if second w00t not found, jump to NEXT_ADDRESS
 
-  ADD EAX, 0x8                  ; if two eggs are found, increase EAX + 8         
-  JMP EAX                       ; jump to EAX + 8 address where shell code would be located
+  ADD EDX, 0x8                  ; if two eggs are found, increase EDX + 8         
+  JMP EDX                       ; jump to EDX + 8 address where shell code would be located
 
 ``` 
 When we compile it, link it, and run it, we get an segmentation fault when comparing egg with address in EAX.
 
 ```
-Program received signal SIGSEGV, Segmentation fault.                                                                                                                  
-[----------------------------------registers-----------------------------------]                                                                                      
-EAX: 0x1                                                                                                                                                              EBX: 0x0                                                                                                                                                              ECX: 0x0                                                                                                                                                              EDX: 0x0                                                                                                                                                              ESI: 0x0                                                                                                                                                              EDI: 0x0                                                                                                                                                              EBP: 0x0                                                                                                                                                              ESP: 0xbffff360 --> 0x1                                                                                                                                               EIP: 0x8049003 (<NEXT_ADDRESS+1>:       cmp    DWORD PTR [eax],0x74303077)                                                                                            EFLAGS: 0x10202 (carry parity adjust zero sign trap INTERRUPT direction overflow)                                                                                     [-------------------------------------code-------------------------------------]                                                                                         0x8048ffe:   add    BYTE PTR [eax],al                                                                                                                                 0x8049000 <_start>:  xor    eax,eax
-   0x8049002 <NEXT_ADDRESS>:    inc    eax
-=> 0x8049003 <NEXT_ADDRESS+1>:  cmp    DWORD PTR [eax],0x74303077
+Program received signal SIGSEGV, Segmentation fault.
+[----------------------------------registers-----------------------------------]
+EAX: 0x0 
+EBX: 0x0 
+ECX: 0x0 
+EDX: 0x1 
+ESI: 0x0 
+EDI: 0x0 
+EBP: 0x0 
+ESP: 0xbffff360 --> 0x1 
+EIP: 0x8049003 (<NEXT_ADDRESS+1>:       cmp    DWORD PTR [edx],0x74303077)
+EFLAGS: 0x10202 (carry parity adjust zero sign trap INTERRUPT direction overflow)
+[-------------------------------------code-------------------------------------]
+   0x8048ffe:   add    BYTE PTR [eax],al
+   0x8049000 <_start>:  xor    edx,edx
+   0x8049002 <NEXT_ADDRESS>:    inc    edx
+=> 0x8049003 <NEXT_ADDRESS+1>:  cmp    DWORD PTR [edx],0x74303077
    0x8049009 <NEXT_ADDRESS+7>:  jne    0x8049002 <NEXT_ADDRESS>
    0x804900b <NEXT_ADDRESS+9>:  cmp    DWORD PTR [edx+0x4],0x74303077
    0x8049012 <NEXT_ADDRESS+16>: jne    0x8049002 <NEXT_ADDRESS>
-   0x8049014 <NEXT_ADDRESS+18>: add    eax,0x8
+   0x8049014 <NEXT_ADDRESS+18>: add    edx,0x8
 [------------------------------------stack-------------------------------------]
 0000| 0xbffff360 --> 0x1 
-0004| 0xbffff364 --> 0xbffff4ed ("/root/repository/slae-exam/assignment03/egghunter1")
-0008| 0xbffff368 --> 0x0 
 ```
 The reason we got segmentation fault is because program is trying to read unallocated memory.  
-To mitigate this issue, there are two possible solutions, both are relying on following syscalls:
-- SYS_SIGACTION
-- SYS_ACCESS
+To mitigate this issue, there are few possible solutions. Solution we will implement is based on ACCESS syscall.
 
 ....
 
@@ -96,11 +104,7 @@ EFAULT is defined in `/usr/include/libr/sflib/common/sftypes.h` file and F_OK is
 
 #define EFAULT          14      /* Bad address */
 
-
-Constants
-Constant 	Decimal Value 	Location
-EFAULT 	14 	/usr/include/libr/sflib/common/sftypes.h
-F_OK 	0 	/usr/include/unistd.h
+.... stil under construction ....
 
 ## References ##
 
