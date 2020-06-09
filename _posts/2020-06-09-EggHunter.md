@@ -311,6 +311,7 @@ int main()
 
 And it works.. 
 
+![egghunter 3 - final version](https://smarinovic.github.io/assets/img/slae_00017.png)
 
 ## Wrapper ## 
 
