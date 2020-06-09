@@ -36,9 +36,10 @@ While(True):
 ## Egg Hunter - first attempt ##
 
 Let's write basic Egg Hunter in assembly code based on prototype and see what will happen. Once Egg Hunter is compiled and liked, we can use Egg Hunter opcode with sekelton code from previous blog posts.
-In order for Egg Hunter to find and execute shell code (we used reverse shell code from previous blog post) we need to add two instances of egg `\x77\x30\x30\x74` at the beggining of shell code.
+In order for Egg Hunter to find and execute shell code (we used reverse shell code from previous blog post) we need to add two instances of egg ```\x77\x30\x30\x74``` at the beggining of shell code.
 
 * Assemlby code is following: *
+
 ```
 global _start
 
