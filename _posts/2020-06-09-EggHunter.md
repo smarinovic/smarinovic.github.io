@@ -79,7 +79,7 @@ int main()
 
 Once compiled and run we get an segmentation fault at the very beggining of execution as shown on following screenshot and GDB output:
 
-![segmentation fault](slae_00015.png)
+![segmentation fault](https://smarinovic.github.io/assets/img/slae_00015.png)
 
 ```
 Program received signal SIGSEGV, Segmentation fault.
@@ -119,7 +119,7 @@ Stopped reason: SIGSEGV
 ```
 
 The reason we got segmentation fault is because our program is trying to access unalocated memory.  
-We can verify this with following gdb command ```x/1b 0x1``` used to display one byte at given location 0x1:
+We can verify this with following gdb command `x/1b 0x1` used to display one byte at given location 0x1:
 
 ```
 gdb-peda$ x/1b 0x1
