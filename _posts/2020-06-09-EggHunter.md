@@ -7,8 +7,6 @@ tags: [slae, shellcoding]
 toc: true
 ---
 
-** PAGE STILL UNDER CONSTRUCTION **
-
 ## Introduction ##
 
 Egg Hunter is super useful and simple piece of code used to search for an defined series of bytes called "egg" in a memory. Egg as such is just a 4 bytes string, usually: "w00t" (but it can be anything else unique) which is added twice as prefix to a shellcode and thus marks beggining of a shell code.  
