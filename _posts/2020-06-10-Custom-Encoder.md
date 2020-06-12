@@ -133,6 +133,7 @@ gcc -fno-stack-protector -z execstack -m32 skeleton.c -o encoded_revshell -g
 
 By stepping thu program with GDB we can see shell code decoding. At the beggining of decoding stup we can see that ESI register is pointing to the beggining of encoded shellcode. ESI is pointing to address 0x404067. In order to see decoding in action we will monitor first 10 bytes at given address.
 * Initial data on the stack
+
 ```
 gdb-peda$ info register esi
 esi            0x404067            0x404067
@@ -141,6 +142,7 @@ gdb-peda$ x/10b 0x404067
 0x404067 <shellcode+39>:        0x3e    0x90    0xcf    0x90    0x3e    0x90    0xd4    0x90
 0x40406f <shellcode+47>:        0x3e    0x90
 ```
+
 * stack staus after few itterations:
 
 ```
