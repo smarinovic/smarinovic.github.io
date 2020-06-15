@@ -59,14 +59,15 @@ Encoded shellcode: 0x3e,0x90,0xcf,0x90,0x3e,0x90,0xd4,0x90,0x3e,0x90,0xc6,0x90,0
 ## Decoder ##
 
 To sucessfuly decode encoded shell code, we need to preform XOR operation for every shell code byte with previously defined key ```0x0F```. 
-Every other byte will be skipped as it is NOP (```0x90```) instrunction. We will use following registers for decoding: 
+Every other byte will be skipped as it is NOP (```0x90```) instrunction.  
+We will use following registers for decoding: 
 * EAX for XOR operations
 * ECX as counter for decoding stub
 * EDX as pointer to beggining of encoded (and later decoded) shell code
 * ESI as pointer to byte which we need to decode
 * EDI as pointer to memory address where decoded byte will be placed overwriting original byte
 
-Stub will overwrite original encoded shell code with decoded one, but since we will skip every other byte (\x90) we will have some "garbage" left on the stack. Since running our shell code is primary goal we won't bother with garbage code at this point in time.
+Stub will overwrite original encoded shell code with decoded one, but since we will skip every other byte (```0x90```) we will have some "garbage" left on the stack. Since running our shell code is primary goal we won't bother with garbage code at this point in time.
 
 ```
 global _start
@@ -165,8 +166,8 @@ gdb-peda$ x/10b 0x404067
 0x40406f <shellcode+47>:        0x3e    0x90
 ```
 
-* content of the same address after few itterations:  
-We can see that ```0x3e``` is decoded to ```0x31``` (which is result of following instruction ```XOR 0x0F, 0x3e```) and ```0x90``` is ignored and overwritten.
+* content of the same address (```0x404067```) after few itterations:  
+We can see that ```0x3e``` is decoded to ```0x31``` which is result of following operation ```XOR 0x0F, 0x3e``` and ```0x90``` from previous snippet is ignored and overwritten with result of ```XOR 0xfc, 0x0f``` operation. Also 3rd byte is replaced with 0x31 which is result of ```XOR 0x3e, 0x0f``` operation etc. 
 
 ```
 gdb-peda$ x/10b 0x404067
@@ -177,7 +178,7 @@ gdb-peda$ x/10b 0x404067
  etc.
 ```
 
-* content of the same address after some more itterations:  
+* content of the same address (```0x404067```) after some more itterations:  
 We can see that decoded shell code does not contain added NOPs (```0x90```) and that all opcodes are XORed (0x3e XOR 0f = 0x31, 0xcf XOR 0x0f = 0xc0, etc.). Decoded opcodes overwrites original encoded opcodes:
 ```
 gdb-peda$ x/10b 0x404067
