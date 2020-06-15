@@ -7,7 +7,6 @@ tags: [slae, shellcoding, encoder, decoder]
 toc: true                                                                                                                                                                                                                                 
 ---                                                                                                                                                                                                                                       
                                                                                                                                                                                                                                           
-** PAGE STILL UNDER CONSTRUCTION **   
 ## Introduction ##
 
 Sending well known shell code to target machine would most probably be detected by antimalware solution . 
