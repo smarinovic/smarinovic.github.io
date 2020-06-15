@@ -126,7 +126,7 @@ With modified command, extracted opcode is following:
 
 ## Seeing decoder in action ##
 
-Next, we can use skeleton code to run and test sucessfull decoding. To compile it following command should be used:
+Next, we can use skeleton code to run and test if decoding is sucessfull. To compile it following command should be used:
 
 ```
 gcc -fno-stack-protector -z execstack -m32 skeleton.c -o encoded_revshell -g
