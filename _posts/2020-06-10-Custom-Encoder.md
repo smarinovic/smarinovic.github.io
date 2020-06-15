@@ -3,7 +3,7 @@ title: Custom Encoder
 author: Stipe Marinovic
 date: 2020-06-10 22:00:00 +0800                                                                                                                                                                                                           
 categories: [Blogging, Tutorial]                                                                                                                                                                                                          
-tags: [slae, shellcoding]                                                                                                                                                                                                                 
+tags: [slae, shellcoding, encoder, decoder]                                                                                                                                                                                                                 
 toc: true                                                                                                                                                                                                                                 
 ---                                                                                                                                                                                                                                       
                                                                                                                                                                                                                                           
