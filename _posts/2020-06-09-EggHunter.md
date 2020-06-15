@@ -3,7 +3,7 @@ title: Egg Hunter
 author: Stipe Marinovic
 date: 2020-06-09 22:00:00 +0800
 categories: [Blogging, Tutorial]
-tags: [slae, shellcoding]
+tags: [slae, shellcoding, egghunter]
 toc: true
 ---
 
