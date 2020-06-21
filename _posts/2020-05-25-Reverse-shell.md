@@ -16,7 +16,7 @@ It is mostly used within payload sent to remote application which is vulnerable 
 
 ## Prototype ##
 
-To get idea how reverse shell works and which syscalls are used/needed we can create prototye of reverse shell code in C.  
+To get idea how reverse shell works and which syscalls are used/needed we can create prototype of reverse shell code in C.  
 
 ```
 #define _GNU_SOURCE # added to avoid gcc's implicit declaration of function warning
@@ -80,7 +80,7 @@ Syscall               Dec   Hex
 #define __NR_execve   11    0xB
 ```
 
-Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which argments are needed we need to look at man pages (`man 2 socket`). 
+Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which arguments are needed we need to look at man pages (`man 2 socket`). 
 
 ```
 int socket(int domain, int type, int protocol);
@@ -94,7 +94,7 @@ Arguments are passed via registers in following order; EAX, EBX, ECX, EDX, ESI, 
 EAX always contains syscall number (in case of socket it is decimal 359 but in assembly hex is used so syscall number will be 0x167).   
 The domain, type and protocol needs to be placed in EBX, ECX and EDX registers.
   
-Assemlby instraction: `MOV register, value` is used to move value to register. So `MOV EAX, 0x167` will place 0x167 value in EAX register.  
+Assembly instruction: `MOV register, value` is used to move value to register. So `MOV EAX, 0x167` will place 0x167 value in EAX register.  
 Since shell code will most probably be used within exploit, payload cannot contain null byte as null byte (\x00) terminates string and most probably breaks exploit.
 Playing with msf-nasm_shell.rb tool, which is available in Kali linux as part of MetaSploit framework, we can see that opcode for `MOV EAX, 0x167` contains null bytes.
 ```
@@ -269,7 +269,7 @@ int execve(const char *pathname, char *const argv[], char *const envp[]);
 > argv is an array of argument strings passed to the new program.  By convention, the first of these strings (i.e., argv[0]) should  contain  the  filename associated  with  the file being executed.  envp is an array of strings, conventionally of the form key=value, which are passed as environment to the new program. 
 > The argv and envp arrays must each include a null pointer at the end of the array.
 
-First we need to push values to the stack. Argv and envp need to have null pointer as well as path name must be null terminated. Since stack grovs from higher to lower memory address, first we need to push null byte and then "/bin/sh" in reverse order. Additinal remark, since "/bin/sh" takes 7 bytes, we can add another slash to have 8 bytes "//bin/sh" and avoid null bytes. 
+First we need to push values to the stack. Argv and envp need to have null pointer as well as path name must be null terminated. Since stack grovs from higher to lower memory address, first we need to push null byte and then "/bin/sh" in reverse order. Additional remark, since "/bin/sh" takes 7 bytes, we can add another slash to have 8 bytes "//bin/sh" and avoid null bytes. 
 In order to push null byte to stack, we need to zero-out EAX and push it to stack:
 
 ```
@@ -283,7 +283,7 @@ PUSH 0x68732f6E
 PUSH 0x69622f2F
 ```
 
-Then we need to place pointer to beggining of stack to EBX. ESP is pointing to the beggining of the stack and put null pointer by pushing EAX to the stack.
+Then we need to place pointer to beginning of stack to EBX. ESP is pointing to the beginning of the stack and put null pointer by pushing EAX to the stack.
 ```
 MOV EBX, ESP
 PUSH EAX

