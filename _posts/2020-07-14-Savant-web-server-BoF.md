@@ -417,4 +417,5 @@ s.close()
 print ("[+] Payload sent")
 ```
 ![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_12.png?raw=true)
+
 And it works! Reverse shell is established.
