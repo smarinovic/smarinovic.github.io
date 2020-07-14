@@ -3,7 +3,7 @@ title: Savant 3.1 webserver buffer overflow exploit
 author: Stipe Marinovic
 date: 2020-07-24 23:00:00 +0800
 categories: [Blogging, Tutorial, Exploit]
-tags: [fuzzing, shellcoding, exploit]
+tags: [fuzzing, shellcoding, exploit, bufferoverflow, bof]
 toc: true
 ---
 
@@ -21,7 +21,7 @@ First step in buffer overflow exploit research and development is to find a way 
 Once application is crashed, we can explore the way it was crashed and see if it can be exploited in useful way. 
 For that purpose we are using fuzzer, which is an application used to generate various payload based on user specified template. 
 There are more than few fuzzers available today such as: Spike, Sulley, Boofuzz,... 
-In this walktrough we will be using python script with boofuzz module.  
+In this walkthrough we will be using python script with boofuzz module.  
   
 When we use standard python script with boofuzz module and common http template, sadly, the application doesn't crash.
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     main()
 ```
   
-But if we setup ```post_test_case_callbacks``` function call to capute response from web server after the payload was sent, we can see that application is not always returning expected output which should start with ```HTTP/1.1``` following with status code (200, 301, 404 etc.) as defined in HTTP protocol. Based on that observation we can setup our fuzzer to save all payloads which didn't return expected response in a file.
+But if we setup ```post_test_case_callbacks``` function call to capture response from web server after the payload was sent, we can see that application is not always returning expected output which should start with ```HTTP/1.1``` following with status code (200, 301, 404 etc.) as defined in HTTP protocol. Based on that observation we can setup our fuzzer to save all payloads which didn't return expected response in a file.
 
 * Updated fuzzer  
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     main()
 ```
 
-Once fuzzing cycle is finished, we can see that majority of payloads which didn't returned expected reposnse have something in common. Every payload has at least one "%" character.
+Once fuzzing cycle is finished, we can see that majority of payloads which didn't returned expected response have something in common. Every payload has at least one "%" character.
 
 ![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_1.png?raw=true)
 
@@ -173,7 +173,7 @@ Great! Now we can start to dig deeper.
 ## EIP overwrite ##
 
 Let's attach Immunity Debugger (or OllyDbg) to application and observe behaviour.
-After little bit of playing with payload lenght we can conclude that ```EIP``` gets fully overwritten if we send ```GET /%``` plus 270 "A" characters (hex 41 eaqules to ASCII "A") and ``` HTTP/1.1\r\n``` at the end which can be seen in following screenshot (```ÈIP``` is overwritten with 41414141 which eaquals to 4 "A" characters.
+After little bit of playing with payload length we can conclude that ```EIP``` gets fully overwritten if we send ```GET /%``` plus 270 "A" characters (hex 41 equals to ASCII "A") and ``` HTTP/1.1\r\n``` at the end which can be seen in following screenshot (```ÈIP``` is overwritten with 41414141 which equals to 4 "A" characters.
 
 ![EIP overwrite](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_4.png?raw=true)
 
@@ -181,8 +181,8 @@ But if we send 4 more characters, application crashes in a way that we don't hav
 
 ![EIP overwrite fail](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_5.png?raw=true)
 
-Ok, so we are limited to ```GET /%``` plus 270 characters and it seems that none of the registers is pointing to the beggining of the payload.  
-But if we explore some more, we can see that ```GET``` keyword is close to the top of the stack (4 bytes away). In order to reach it, we would need to find address pointing to ```pop ... ret```sequence. ```pop``` would remove 4 bytes from the stack by loading it to some register (for example ```pop eax``` would load 4 bytes in ```eax``` register) and ```ret``` would execute what ever is left on top of the stack (which is beggining of our payload). 
+Ok, so we are limited to ```GET /%``` plus 270 characters and it seems that none of the registers is pointing to the beginning of the payload.  
+But if we explore some more, we can see that ```GET``` keyword is close to the top of the stack (4 bytes away). In order to reach it, we would need to find address pointing to ```pop ... ret```sequence. ```pop``` would remove 4 bytes from the stack by loading it to some register (for example ```pop eax``` would load 4 bytes in ```eax``` register) and ```ret``` would execute what ever is left on top of the stack (which is beginning of our payload). 
 
 ![Stack](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_6.png?raw=true)
 
@@ -196,7 +196,7 @@ One more interesting thing. If we replace GET with CCC in proof of concept scrip
 #buffer = "GET /%" + 270 * "A" + " HTTP/1.1\r\n"
 buffer = "CCC /%" + 270 * "A" + " HTTP/1.1\r\n"
 ```
-we still get ```EIP``` overwritten, meaning that overflow is non dependat on ```GET``` keyword. This finding allow us to place opcodes for instructions we need (and we would need to jump 25 bytes in order to reach place where we could place our shellcode) instead of ```GET``` keyword. 
+we still get ```EIP``` overwritten, meaning that overflow is non dependant on ```GET``` keyword. This finding allow us to place opcodes for instructions we need (and we would need to jump 25 bytes in order to reach place where we could place our shellcode) instead of ```GET``` keyword. 
 
 ![HTTP method](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_8.png?raw=true)
 
@@ -216,7 +216,7 @@ badchars = ("\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x1
 "\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff")
 ```
 
-Before we send anything, we can remove ```\x00``` from the list as it is well known bad char. Null byte (```\x00```) is used to terminate sting and as such it breaks payoad.  
+Before we send anything, we can remove ```\x00``` from the list as it is well known bad char. Null byte (```\x00```) is used to terminate sting and as such it breaks payload.  
   
 This vulnerability is quite interesting. If we send badchars as payload after http method (which is first couple of bytes) and ```/%```we only get ```\x00\x0a\x3f``` as bad chars.
   
@@ -231,7 +231,7 @@ But when we test first couple of bytes which defines http method (GET, POST…) 
 \xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xf
 ```
 
-So when we are writing shell code which will be placed after ```/%``` we cannot use following bad characters: ```\x00\x0a\x3f``` but when we are overwrigint first few bytes of payload (HTTP method) we cannot use following bad characters: ```\x00\x0a\x3f\x09\x0d\x1e\x1f\x20\x21\x22\x23\x28\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xf```
+So when we are writing shell code which will be placed after ```/%``` we cannot use following bad characters: ```\x00\x0a\x3f``` but when we are overwriting first few bytes of payload (HTTP method) we cannot use following bad characters: ```\x00\x0a\x3f\x09\x0d\x1e\x1f\x20\x21\x22\x23\x28\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xf```
 
 
 ## Jump to shell code ##
@@ -246,11 +246,11 @@ Opcodes for jump instructions can be found on following page: http://unixwiz.net
 	
 ![opcodes](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_9.png?raw=true)
 
-Unconditional jump is not possible as opcode for unconditional jump ```\xeb```is badcharacter. So we need to use one of "good" characters suchs as following: 
+Unconditional jump is not possible as opcode for unconditional jump ```\xeb```is badcharacter. So we need to use one of "good" characters such as following: 
 
 ![whitelist opcodes](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_10.png?raw=true)
 
-Let's use JNLE instruction. For example, we can put value x02 in AL register and compare AL with 0x1. Result of such instruction will be "not less or equal" so we could use "jumo if not less of equal" (JNLP) instruction for jumping.
+Let's use JNLE instruction. For example, we can put value x02 in AL register and compare AL with 0x1. Result of such instruction will be "not less or equal" so we could use "jump if not less of equal" (JNLP) instruction for jumping.
 
 ```
 nasm > cmp al, 01
@@ -260,7 +260,7 @@ nasm > mov al, 02
 nasm > 
 ```
 
-Opcodes for such jump is following: ```\xb0\x02\x3c\x01\x7f\x14```.  
+Opcodes for such jump are following: ```\xb0\x02\x3c\x01\x7f\x14```.  
 
 ```
 jump ="\xb0\x02\x3c\x01\x7f\x14"
@@ -301,7 +301,7 @@ Next, we need to find ```POP something RET``` instruction sequence in available 
 ```
 
 We can choose the last one ```0x0042119c```.
-Address has a null byte so we cannot use it in payload as such, but since there are nullbytes in front of EIP location we can perform three byte overwrite by sending only three bytes and shortening payload length. By doing that null byte will be automaticaly "added" to address on the stack.
+Address has a null byte so we cannot use it in payload as such, but since there are nullbytes in front of EIP location we can perform three byte overwrite by sending only three bytes and shortening payload length. By doing that null byte will be automatically "added" to address on the stack.
   
 When we generate reverse shell payload, it takes more than 270 bytes we have at our disposal so we cannot place it in payload. What we can do is to generate egghunter and place reverse shell code somewhere else in a memory. We can add it after last header to act as POST request payload. We will tag shellcode with two instances of egg (w00t) and let egghunter search for it. Once egghunter finds two eggs, it redirect execution of a program to shellcode which is located after the second egg.
 
@@ -417,5 +417,4 @@ s.close()
 print ("[+] Payload sent")
 ```
 ![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_12.png?raw=true)
-
 And it works! Reverse shell is established.
