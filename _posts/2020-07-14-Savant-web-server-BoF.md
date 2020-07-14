@@ -25,7 +25,8 @@ In this walktrough we will be using python script with boofuzz module.
   
 When we use standard python script with boofuzz module and common http template, sadly, the application doesn't crash.
 
-* Initial fuzzer
+* Initial fuzzer  
+
 ```
 #!/usr/bin/python
 import sys
@@ -74,7 +75,8 @@ if __name__ == "__main__":
   
 But if we setup ```post_test_case_callbacks``` function call to capute response from web server after the payload was sent, we can see that application is not always returning expected output which should start with ```HTTP/1.1``` following with status code (200, 301, 404 etc.) as defined in HTTP protocol. Based on that observation we can setup our fuzzer to save all payloads which didn't return expected response in a file.
 
-* Updated fuzzer
+* Updated fuzzer  
+
 ```
 #!/usr/bin/python
 import sys
@@ -171,22 +173,22 @@ Great! Now we can start to dig deeper.
 ## EIP overwrite ##
 
 Let's attach Immunity Debugger (or OllyDbg) to application and observe behaviour.
-After little bit of playing with payload lenght we can conclude that ```EIP``` gets fully overwritten if we send ```GET /%``` plus 270 "A" characters (hex 41 eaqules to ASCII "A") and ``` HTTP/1.1\r\n``` at the end which can be seen in following screenshot (``ÈIP```is overwritten with 41414141 which eaquals to 4 "A" characters.
+After little bit of playing with payload lenght we can conclude that ```EIP``` gets fully overwritten if we send ```GET /%``` plus 270 "A" characters (hex 41 eaqules to ASCII "A") and ``` HTTP/1.1\r\n``` at the end which can be seen in following screenshot (```ÈIP``` is overwritten with 41414141 which eaquals to 4 "A" characters.
 
-![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_4.png?raw=true)
+![EIP overwrite](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_4.png?raw=true)
 
 But if we send 4 more characters, application crashes in a way that we don't have control over ```EIP``` anymore as ```EIP``` is not overwritten with expected payload (```\x41```).
 
-![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_5.png?raw=true)
+![EIP overwrite fail](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_5.png?raw=true)
 
 Ok, so we are limited to ```GET /%``` plus 270 characters and it seems that none of the registers is pointing to the beggining of the payload.  
-But if we explore some more, we can see that ```GET``` keyword is close to the top of the stack (4 bytes away). In order to reach it, we would need to find address pointing to ```pop ... ret```sequence. ```pop```would remove 4 bytes from the stack by loading it to some register (for example ```pop eax``` would load 4 bytes in ``èax``` register) and ```ret```would execute what ever is left on top of the stack (which is beggining of our payload). 
+But if we explore some more, we can see that ```GET``` keyword is close to the top of the stack (4 bytes away). In order to reach it, we would need to find address pointing to ```pop ... ret```sequence. ```pop``` would remove 4 bytes from the stack by loading it to some register (for example ```pop eax``` would load 4 bytes in ```eax``` register) and ```ret``` would execute what ever is left on top of the stack (which is beggining of our payload). 
 
-![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_6.png?raw=true)
+![Stack](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_6.png?raw=true)
 
 By examining "follow in dump" address where ```GET```is located we can see that the rest of our payload (AAAAA...) is located aprox 25 bytes further away from ```GET```keyword.
 
-![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_7.png?raw=true)
+![Stack](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_7.png?raw=true)
 
 One more interesting thing. If we replace GET with CCC in proof of concept script as follows:
 
@@ -196,7 +198,7 @@ buffer = "CCC /%" + 270 * "A" + " HTTP/1.1\r\n"
 ```
 we still get ```EIP``` overwritten, meaning that overflow is non dependat on ```GET``` keyword. This finding allow us to place opcodes for instructions we need (and we would need to jump 25 bytes in order to reach place where we could place our shellcode) instead of ```GET``` keyword. 
 
-![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_8.png?raw=true)
+![HTTP method](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_8.png?raw=true)
 
 ## Finding bad chars ##
 
@@ -228,6 +230,7 @@ But when we test first couple of bytes which defines http method (GET, POST…) 
 \xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4
 \xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xf
 ```
+
 So when we are writing shell code which will be placed after ```/%``` we cannot use following bad characters: ```\x00\x0a\x3f``` but when we are overwrigint first few bytes of payload (HTTP method) we cannot use following bad characters: ```\x00\x0a\x3f\x09\x0d\x1e\x1f\x20\x21\x22\x23\x28\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xf```
 
 
@@ -236,16 +239,16 @@ So when we are writing shell code which will be placed after ```/%``` we cannot 
 Next we need to find opcodes which would preform jump 25 bytes on the stack. 
 Based on this tutorial: https://www.tutorialspoint.com/assembly_programming/assembly_conditions.htm there are two kinds of jumps which can be preformed in assembly language:
 
-	* Unconditional jump: this is performed by the JMP instruction. Conditional execution often involves a transfer of control to the address of an instruction that does not follow the currently executing instruction. Transfer of control may be forward, to execute a new set of instructions or backward, to re-execute the same steps.
+* Unconditional jump: this is performed by the JMP instruction. Conditional execution often involves a transfer of control to the address of an instruction that does not follow the currently executing instruction. Transfer of control may be forward, to execute a new set of instructions or backward, to re-execute the same steps.
   * Conditional jump: this is performed by a set of jump instructions j<condition> depending upon the condition. The conditional instructions transfer the control by breaking the sequential flow and they do it by changing the offset value in IP.
 
 Opcodes for jump instructions can be found on following page: http://unixwiz.net/techtips/x86-jumps.html
 	
-![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_9.png?raw=true)
+![opcodes](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_9.png?raw=true)
 
 Unconditional jump is not possible as opcode for unconditional jump ```\xeb```is badcharacter. So we need to use one of "good" characters suchs as following: 
 
-![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_10.png?raw=true)
+![whitelist opcodes](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_10.png?raw=true)
 
 Let's use JNLE instruction. For example, we can put value x02 in AL register and compare AL with 0x1. Result of such instruction will be "not less or equal" so we could use "jumo if not less of equal" (JNLP) instruction for jumping.
 
@@ -267,9 +270,9 @@ buffer += "Host: 172.16.24.212\r\nUser-Agent FUZZ\r\nAccept: FUZZ\r\nConnection:
 
 We can see that opcodes are unmodified on the stack:
 
-![Fuzzing results](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_11.png?raw=true)
+![jump opcodes on stack](https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/savant_11.png?raw=true)
 
-Next, we need to find POP something RET instruction sequence in available modules. Mona has found more that few of them:
+Next, we need to find ```POP something RET``` instruction sequence in available modules. Mona has found more that few of them:
 
 ```
 0x004169a1 : pop edi # retn | startnull {PAGE_EXECUTE_READ} [Savant.exe] ASLR: False, Rebase: False, SafeSEH: False, OS: False, v3.1 (C:\VulnerableSoftware\Savant\Savant.exe)
