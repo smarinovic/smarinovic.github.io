@@ -7,6 +7,13 @@ tags: [fuzzing, shellcoding, exploit, bufferoverflow, bof]
 toc: true
 ---
 
+## Introduction ##
+
+In this blog post we will go thru recreating buffer overflow exploit for MinaliC web server. Application can be downloaded on following URL: https://sourceforge.net/projects/minalic/.
+Resources needed:
+* Windows XP with debugger: Immunity Debugger or OllDbg
+* Kali Linux or any other OS with python and boofuzz installed
+
 ## Fuzzing ##
 
 Standard python script with boofuzz module and post_test_case_callback function call can be used for fuzzing. 
