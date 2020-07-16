@@ -1,7 +1,7 @@
 ---
 title: MinaliC 2.0.0 buffer overflow exploit
 author: Stipe Marinovic
-date: 2020-07-15 23:00:00 +0800
+date: 2020-07-13 23:00:00 +0800
 categories: [Blogging, Tutorial, Exploit]
 tags: [fuzzing, shellcoding, exploit, bufferoverflow, bof]
 toc: true
