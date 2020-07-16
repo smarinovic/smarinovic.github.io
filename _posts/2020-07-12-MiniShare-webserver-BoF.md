@@ -239,10 +239,10 @@ We can use mona to find address with JMP ESP instruction: ```!mona findwild -s "
 One of the addresses suggested by mona is: ```JMP ESP 0x7e429353```
 
 which we need to reverse and write in little endian format for it to be placed correctly in memory:
-jmp_esp ="\x53\x93\x42\x7e"
+```jmp_esp ="\x53\x93\x42\x7e"```
 
 
-## Finding bed characters ##
+## Finding bad characters ##
 
 As next step we need to find bad characters. Bad characters are all characters which breaks an exploit. Most well known one is "\x00" (null byte) as null byte is used to terminate string in C program language. In order to find other bad characters we need to send all characters as payload and observe behavior. If payload didn't crash application that means that we have bad character in our payload. To narrow down location of our bad character we can send 10 characters at a time until we find a set or characters containing bad character and then send one by one character form that set until we find which character is bad. We need to repeat this steps until every bad character is found. 
 
