@@ -12,6 +12,7 @@ toc: true
 Standard python script with boofuzz module and post_test_case_callback function call can be used for fuzzing. 
 
 * Fuzzer
+
 ```
 #!/usr/bin/python
 import sys
