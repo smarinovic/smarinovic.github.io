@@ -12,8 +12,8 @@ title: Stipe Marinovic                          # the main title
 
 tagline:  # it will display as the sub-title
 
-description: >-                        # used by seo meta and the atom feed
-HackTheBox writeups, exploit development tutorials, OSCP, OSCE, CTP resources
+description: HackTheBox writeups, exploit development tutorials, OSCP, OSCE, CTP resources # used by seo meta and the atom feed
+
 
 # Replace with the website url, e.g. 'https://username.github.io'
 url: 'https://smarinovic.github.io'
